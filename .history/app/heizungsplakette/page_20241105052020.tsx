@@ -253,8 +253,6 @@ export default function HeizungsplaketteMaske() {
       if (currentStep < 7) {
         setCurrentStep(prev => prev + 1)
         setVisitedSteps(prev => Array.from(new Set([...prev, currentStep + 1])))
-      }
-      if (currentStep == 7){
         router.push('/confirmation')
       } else {
         try {
