@@ -1,0 +1,32 @@
+
+Zusammenfassung Ihrer Heizungsplakette Anfrage:
+
+Heizungsart: Gasheizung
+
+
+Adresse der Immobilie:
+Straße: Treuenbrietzener Straße
+Hausnummer: 9
+Postleitzahl: 13439
+Ort: Berlin
+
+Immobilientyp: undefined
+
+
+Heizsystem: Zentralheizung
+
+
+Hersteller: undefined
+Baujahr: 2009
+
+Typenbezeichnung: 
+
+
+Energieträger: 
+
+
+Energieausweis vorhanden: Nein
+
+
+Ist Eigentümer: Ja
+    
