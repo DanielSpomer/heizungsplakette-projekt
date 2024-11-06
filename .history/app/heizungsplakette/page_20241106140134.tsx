@@ -121,7 +121,6 @@ export default function HeizungsplaketteMaske() {
     heizungslabelFoto: null as File | null,
     heizungFoto: null as File | null,
     bedienungsanleitungFoto: null as File | null,
-    verzichtAufFotos: false,
     confirmAccuracy: false
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -207,11 +206,9 @@ export default function HeizungsplaketteMaske() {
       if (!formData.personOrt) newErrors.personOrt = "Bitte geben Sie Ihren Ort an."
       if (!formData.istEigentuemer) newErrors.istEigentuemer = "Bitte geben Sie an, ob Sie der Eigentümer sind."
     } else if (step === 6) {
-      if (!formData.verzichtAufFotos) {
-        if (!formData.heizungslabelFoto) newErrors.heizungslabelFoto = "Bitte laden Sie ein Foto des Heizungslabels hoch oder verzichten Sie auf Fotos."
-        if (!formData.heizungFoto) newErrors.heizungFoto = "Bitte laden Sie ein Foto der Heizung hoch oder verzichten Sie auf Fotos."
-        if (!formData.bedienungsanleitungFoto) newErrors.bedienungsanleitungFoto = "Bitte laden Sie ein Foto der ersten Seite der Bedienungsanleitung hoch oder verzichten Sie auf Fotos."
-      }
+      if (!formData.heizungslabelFoto) newErrors.heizungslabelFoto = "Bitte laden Sie ein Foto des Heizungslabels hoch."
+      if (!formData.heizungFoto) newErrors.heizungFoto = "Bitte laden Sie ein Foto der Heizung hoch."
+      if (!formData.bedienungsanleitungFoto) newErrors.bedienungsanleitungFoto = "Bitte laden Sie ein Foto der ersten Seite der Bedienungsanleitung hoch."
     } else if (step === 7) {
       if (!formData.confirmAccuracy) newErrors.confirmAccuracy = "Bitte bestätigen Sie die Richtigkeit Ihrer Angaben."
     }
@@ -256,26 +253,27 @@ export default function HeizungsplaketteMaske() {
       if (currentStep < 7) {
         setCurrentStep(prev => prev + 1)
         setVisitedSteps(prev => Array.from(new Set([...prev, currentStep + 1])))
+      }
+      if (currentStep == 7){
+        router.push('/confirmation')
       } else {
         try {
           const response = await fetch('/api/send-email', {
             method: 'POST',
             headers: {
+              
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(formData),
-          });
+          })
 
           if (response.ok) {
-            console.log('E-Mails erfolgreich gesendet');
-            router.push('/confirmation');
+            router.push('/confirmation')
           } else {
-            console.error('Fehler beim Senden der E-Mails');
-            // Hier könnten Sie eine Fehlermeldung für den Benutzer anzeigen
+            console.error('Fehler beim Senden der E-Mail')
           }
         } catch (error) {
-          console.error('Fehler beim Senden der E-Mails:', error);
-          // Hier könnten Sie eine Fehlermeldung für den Benutzer anzeigen
+          console.error('Fehler beim Senden der E-Mail:', error)
         }
       }
     }
@@ -773,53 +771,39 @@ export default function HeizungsplaketteMaske() {
                   Foto-Upload
                 </h2>
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Checkbox
-                      id="verzichtAufFotos"
-                      checked={formData.verzichtAufFotos}
-                      onCheckedChange={handleCheckboxChange('verzichtAufFotos')}
+                  <div>
+                    <Label htmlFor="heizungslabelFoto" className="font-semibold">Foto des Heizungslabels *</Label>
+                    <Input
+                      id="heizungslabelFoto"
+                      name="heizungslabelFoto"
+                      type="file"
+                      onChange={handleFileChange('heizungslabelFoto')}
+                      accept="image/*"
                     />
-                    <Label htmlFor="verzichtAufFotos">
-                      Ich verzichte ausdrücklich auf das Bereitstellen von Fotos
-                    </Label>
+                    {errors.heizungslabelFoto && <p className="text-red-500">{errors.heizungslabelFoto}</p>}
                   </div>
-                  {!formData.verzichtAufFotos && (
-                    <>
-                      <div>
-                        <Label htmlFor="heizungslabelFoto" className="font-semibold">Foto des Heizungslabels *</Label>
-                        <Input
-                          id="heizungslabelFoto"
-                          name="heizungslabelFoto"
-                          type="file"
-                          onChange={handleFileChange('heizungslabelFoto')}
-                          accept="image/*"
-                        />
-                        {errors.heizungslabelFoto && <p className="text-red-500">{errors.heizungslabelFoto}</p>}
-                      </div>
-                      <div>
-                        <Label htmlFor="heizungFoto" className="font-semibold">Foto der Heizung *</Label>
-                        <Input
-                          id="heizungFoto"
-                          name="heizungFoto"
-                          type="file"
-                          onChange={handleFileChange('heizungFoto')}
-                          accept="image/*"
-                        />
-                        {errors.heizungFoto && <p className="text-red-500">{errors.heizungFoto}</p>}
-                      </div>
-                      <div>
-                        <Label htmlFor="bedienungsanleitungFoto" className="font-semibold">Foto der ersten Seite der Bedienungsanleitung *</Label>
-                        <Input
-                          id="bedienungsanleitungFoto"
-                          name="bedienungsanleitungFoto"
-                          type="file"
-                          onChange={handleFileChange('bedienungsanleitungFoto')}
-                          accept="image/*"
-                        />
-                        {errors.bedienungsanleitungFoto && <p className="text-red-500">{errors.bedienungsanleitungFoto}</p>}
-                      </div>
-                    </>
-                  )}
+                  <div>
+                    <Label htmlFor="heizungFoto" className="font-semibold">Foto der Heizung *</Label>
+                    <Input
+                      id="heizungFoto"
+                      name="heizungFoto"
+                      type="file"
+                      onChange={handleFileChange('heizungFoto')}
+                      accept="image/*"
+                    />
+                    {errors.heizungFoto && <p className="text-red-500">{errors.heizungFoto}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="bedienungsanleitungFoto" className="font-semibold">Foto der ersten Seite der Bedienungsanleitung *</Label>
+                    <Input
+                      id="bedienungsanleitungFoto"
+                      name="bedienungsanleitungFoto"
+                      type="file"
+                      onChange={handleFileChange('bedienungsanleitungFoto')}
+                      accept="image/*"
+                    />
+                    {errors.bedienungsanleitungFoto && <p className="text-red-500">{errors.bedienungsanleitungFoto}</p>}
+                  </div>
                 </div>
               </>
             )}
