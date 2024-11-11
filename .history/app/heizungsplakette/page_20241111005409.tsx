@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ClipboardList, Home, MapPin, Camera, CheckCircle, CreditCard, Thermometer, Building, Calendar, FileText, User, Key, Factory, HelpCircle } from 'lucide-react'
+import { ClipboardList, Home, MapPin, Camera, CheckCircle, CreditCard, Thermometer, Building, Calendar, FileText, User, Key, Factory } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 //import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js'    
 
@@ -298,7 +298,7 @@ export default function HeizungsplaketteMaske() {
 
           if (response.ok) {
             console.log('E-Mails erfolgreich gesendet');
-            router.push('/confirmation');
+            router.push('/heizungsplakette/confirmation');
           } else {
             console.error('Fehler beim Senden der E-Mails');
             // Hier könnten Sie eine Fehlermeldung für den Benutzer anzeigen
@@ -507,6 +507,7 @@ export default function HeizungsplaketteMaske() {
                   <CreditCard className="mr-2 text-blue-600" />
                   Bezahlung
                 </h2>
+                <CheckoutForm />
               </>
             )}
 
