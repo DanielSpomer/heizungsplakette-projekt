@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,47 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-type HeizungsplaketteItem = {
-  id: number;
-  datenschutz: boolean;
-  gesetzlicheRichtlinien: boolean;
-  agb: boolean;
-  artDerImmobilie: string;
-  artDerImmobilieSonstige?: string;
-  heizungsart: string;
-  heizungsartSonstige?: string;
-  email: string;
-  strasse: string;
-  hausnummer: string;
-  postleitzahl: string;
-  ort: string;
-  heizsystem: string;
-  heizsystemSonstige?: string;
-  heizungshersteller: string;
-  heizungsherstellerSonstige?: string;
-  baujahr: string;
-  typenbezeichnung: string;
-  energieausweis: string;
-  energieausweisDate: string;
-  vorname: string;
-  nachname: string;
-  personStrasse: string;
-  personHausnummer: string;
-  personPostleitzahl: string;
-  personOrt: string;
-  istEigentuemer: string;
-  status: string;
-  heizungstechnik: string;
-  heizungstechnikSonstige?: string;
-  energietraeger: string;
-  energietraegerSonstige?: string;
-  fotoHeizungslabel: File | null;
-  fotoHeizung: File | null;
-  fotoBedienungsanleitung: File | null;
-  verzichtFotos: boolean;
-}
-
-const getHeizungshersteller = (heizungsart: string): string[] => {
+const getHeizungshersteller = (heizungsart: string) => {
   switch (heizungsart) {
     case 'Gasheizung':
     case 'Ölheizung':
@@ -81,7 +40,7 @@ const getHeizungshersteller = (heizungsart: string): string[] => {
   }
 };
 
-const initialHeizungsplaketten: HeizungsplaketteItem[] = [
+const initialHeizungsplaketten = [
   { 
     id: 1,
     datenschutz: true,
@@ -152,7 +111,7 @@ const initialHeizungsplaketten: HeizungsplaketteItem[] = [
   },
 ]
 
-const getStatusColor = (status: string): string => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'Ausstehend':
       return 'bg-yellow-200 text-yellow-800'
@@ -166,23 +125,18 @@ const getStatusColor = (status: string): string => {
 }
 
 export default function DashboardPage() {
-  const [heizungsplaketten, setHeizungsplaketten] = useState<HeizungsplaketteItem[]>(initialHeizungsplaketten)
+  const [heizungsplaketten, setHeizungsplaketten] = useState(initialHeizungsplaketten)
   const [searchTerm, setSearchTerm] = useState('')
-  const [editingItem, setEditingItem] = useState<HeizungsplaketteItem | null>(null)
-  const [watchingItem, setWatchingItem] = useState<HeizungsplaketteItem | null>(null)
+  const [editingItem, setEditingItem] = useState<any>(null)
+  const [watchingItem, setWatchingItem] = useState<any>(null)
   const [availableHeizungshersteller, setAvailableHeizungshersteller] = useState<string[]>([])
   const [showDetails, setShowDetails] = useState(false)
-  const [isApproving, setIsApproving] = useState(false)
-
-  const updateAvailableHeizungshersteller = useCallback((heizungsart: string) => {
-    setAvailableHeizungshersteller(getHeizungshersteller(heizungsart))
-  }, [])
 
   useEffect(() => {
     if (editingItem) {
-      updateAvailableHeizungshersteller(editingItem.heizungsart)
+      setAvailableHeizungshersteller(getHeizungshersteller(editingItem.heizungsart))
     }
-  }, [editingItem, updateAvailableHeizungshersteller])
+  }, [editingItem?.heizungsart])
 
   const filteredHeizungsplaketten = heizungsplaketten.filter(item =>
     Object.values(item).some(value => 
@@ -190,68 +144,33 @@ export default function DashboardPage() {
     )
   )
 
-  const handleEdit = (item: HeizungsplaketteItem) => {
+  const handleEdit = (item: any) => {
     setEditingItem({ ...item })
   }
 
   const handleSave = () => {
     if (editingItem) {
-      setHeizungsplaketten(prevHeizungsplaketten => 
-        prevHeizungsplaketten.map(item => 
-          item.id === editingItem.id ? { ...editingItem } : item
-        )
-      )
+      setHeizungsplaketten(heizungsplaketten.map(item => 
+        item.id === editingItem.id ? editingItem : item
+      ))
       setEditingItem(null)
     }
   }
 
-  const handleWatch = (item: HeizungsplaketteItem) => {
+  const handleWatch = (item: any) => {
     setWatchingItem(item)
   }
 
-  const handleApprove = async (id: number) => {
-    setIsApproving(true)
-    const itemToApprove = heizungsplaketten.find(item => item.id === id)
-    if (!itemToApprove) {
-      console.error("Heizungsplakette nicht gefunden.")
-      setIsApproving(false)
-      return
-    }
-
-    try {
-      const response = await fetch('/api/approve-heizungsplakette', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(itemToApprove),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to approve Heizungsplakette')
-      }
-
-      setHeizungsplaketten(prevHeizungsplaketten => 
-        prevHeizungsplaketten.map(item => 
-          item.id === id ? { ...item, status: 'Genehmigt' } : item
-        )
-      )
-
-      console.log(`Heizungsplakette für ${itemToApprove.email} wurde genehmigt.`)
-    } catch (error) {
-      console.error('Error approving Heizungsplakette:', error)
-    } finally {
-      setIsApproving(false)
-    }
+  const handleApprove = (id: number) => {
+    setHeizungsplaketten(heizungsplaketten.map(item => 
+      item.id === id ? { ...item, status: 'Genehmigt' } : item
+    ))
   }
 
   const handleReject = (id: number) => {
-    setHeizungsplaketten(prevHeizungsplaketten => 
-      prevHeizungsplaketten.map(item => 
-        item.id === id ? { ...item, status: 'Abgelehnt' } : item
-      )
-    )
-    console.log("Die Heizungsplakette wurde abgelehnt.")
+    setHeizungsplaketten(heizungsplaketten.map(item => 
+      item.id === id ? { ...item, status: 'Abgelehnt' } : item
+    ))
   }
 
   return (
@@ -342,11 +261,11 @@ export default function DashboardPage() {
                         <Eye className="mr-2 h-4 w-4" />
                         Beobachten
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isApproving || item.status === 'Genehmigt'}>
+                      <DropdownMenuItem onClick={() => handleApprove(item.id)}>
                         <Check className="mr-2 h-4 w-4" />
-                        {isApproving ? 'Wird genehmigt...' : 'Genehmigen'}
+                        Genehmigen
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleReject(item.id)} disabled={item.status === 'Abgelehnt'}>
+                      <DropdownMenuItem onClick={() => handleReject(item.id)}>
                         <X className="mr-2 h-4 w-4" />
                         Ablehnen
                       </DropdownMenuItem>
@@ -359,13 +278,13 @@ export default function DashboardPage() {
         </Table>
       </div>
 
-      <Dialog open={editingItem !== null} onOpenChange={(open) => !open && setEditingItem(null)}>
+      <Dialog open={editingItem !== null} onOpenChange={() => setEditingItem(null)}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Heizungsplakette bearbeiten</DialogTitle>
           </DialogHeader>
           {editingItem && (
-            <div className="grid gap-4 py-4">  
+            <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="artDerImmobilie">Art der Immobilie</Label>
@@ -391,7 +310,8 @@ export default function DashboardPage() {
                     <Input
                       id="artDerImmobilieSonstige"
                       value={editingItem.artDerImmobilieSonstige}
-                      onChange={(e) => setEditingItem({...editingItem, artDerImmobilieSonstige: e.target.value})}
+                      onChange={(e) => setEditingItem({...editingItem, artDerImmobilieSonstige: e.target.value})
+                      }
                     />
                   </div>
                 )}
@@ -407,7 +327,6 @@ export default function DashboardPage() {
                         heizungshersteller: '',
                         heizungsherstellerSonstige: ''
                       });
-                      updateAvailableHeizungshersteller(value);
                     }}
                   >
                     <SelectTrigger>
@@ -695,7 +614,7 @@ export default function DashboardPage() {
                     <Checkbox
                       id="verzichtFotos"
                       checked={editingItem.verzichtFotos}
-                      onCheckedChange={(checked) => setEditingItem({...editingItem, verzichtFotos: checked as boolean})}
+                      onCheckedChange={(checked) => setEditingItem({...editingItem, verzichtFotos: checked})}
                     />
                     <Label htmlFor="verzichtFotos">
                       Ich verzichte ausdrücklich auf das Bereitstellen von Fotos
@@ -809,33 +728,9 @@ export default function DashboardPage() {
                     <p>Der Eigentümer hat ausdrücklich auf die Bereitstellung von Fotos verzichtet.</p>
                   ) : (
                     <>
-                      {watchingItem.fotoHeizungslabel && (
-                        <Image 
-                          src={URL.createObjectURL(watchingItem.fotoHeizungslabel)} 
-                          alt="Heizungslabel" 
-                          width={500} 
-                          height={300} 
-                          className="max-w-full h-auto" 
-                        />
-                      )}
-                      {watchingItem.fotoHeizung && (
-                        <Image 
-                          src={URL.createObjectURL(watchingItem.fotoHeizung)} 
-                          alt="Heizung" 
-                          width={500} 
-                          height={300} 
-                          className="max-w-full h-auto" 
-                        />
-                      )}
-                      {watchingItem.fotoBedienungsanleitung && (
-                        <Image 
-                          src={URL.createObjectURL(watchingItem.fotoBedienungsanleitung)} 
-                          alt="Erste Seite der Bedienungsanleitung" 
-                          width={500} 
-                          height={300} 
-                          className="max-w-full h-auto" 
-                        />
-                      )}
+                      {watchingItem.fotoHeizungslabel && <img src={URL.createObjectURL(watchingItem.fotoHeizungslabel)} alt="Heizungslabel" className="max-w-full h-auto" />}
+                      {watchingItem.fotoHeizung && <img src={URL.createObjectURL(watchingItem.fotoHeizung)} alt="Heizung" className="max-w-full h-auto" />}
+                      {watchingItem.fotoBedienungsanleitung && <img src={URL.createObjectURL(watchingItem.fotoBedienungsanleitung)} alt="Erste Seite der Bedienungsanleitung" className="max-w-full h-auto" />}
                     </>
                   )}
                   <p>{`${watchingItem.strasse} ${watchingItem.hausnummer}, ${watchingItem.postleitzahl} ${watchingItem.ort}`}</p>
