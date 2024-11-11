@@ -288,7 +288,7 @@ export default function HeizungsplaketteMaske() {
 
           if (response.ok) {
             console.log('E-Mails erfolgreich gesendet');
-            router.push('/confirmation');
+            router.push('/heizungsplakette/confirmation');
           } else {
             console.error('Fehler beim Senden der E-Mails');
             // Hier könnten Sie eine Fehlermeldung für den Benutzer anzeigen
@@ -595,7 +595,7 @@ export default function HeizungsplaketteMaske() {
                   <div>
                     <h3 className="text-lg font-semibold flex items-center">
                       <Building className="mr-2 text-blue-600" />
-                      Heizsystem
+                      Heizungssystem
                     </h3>
                     <Label htmlFor="heizsystem" className="font-semibold">Heizsystem *</Label>
                     <Select name="heizsystem" onValueChange={handleSelectChange('heizsystem')} value={formData.heizsystem}>

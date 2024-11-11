@@ -288,7 +288,7 @@ export default function HeizungsplaketteMaske() {
 
           if (response.ok) {
             console.log('E-Mails erfolgreich gesendet');
-            router.push('/confirmation');
+            router.push('/heizungsplakette/confirmation');
           } else {
             console.error('Fehler beim Senden der E-Mails');
             // Hier könnten Sie eine Fehlermeldung für den Benutzer anzeigen

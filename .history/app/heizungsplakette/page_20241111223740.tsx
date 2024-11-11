@@ -288,7 +288,7 @@ export default function HeizungsplaketteMaske() {
 
           if (response.ok) {
             console.log('E-Mails erfolgreich gesendet');
-            router.push('/confirmation');
+            router.push('/heizungsplakette/confirmation');
           } else {
             console.error('Fehler beim Senden der E-Mails');
             // Hier könnten Sie eine Fehlermeldung für den Benutzer anzeigen
@@ -586,7 +586,7 @@ export default function HeizungsplaketteMaske() {
                         <HelpCircle className="h-5 w-5 text-gray-400" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über die Typenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
+                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplkatte ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über die Typenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -595,7 +595,7 @@ export default function HeizungsplaketteMaske() {
                   <div>
                     <h3 className="text-lg font-semibold flex items-center">
                       <Building className="mr-2 text-blue-600" />
-                      Heizsystem
+                      Heizungssystem
                     </h3>
                     <Label htmlFor="heizsystem" className="font-semibold">Heizsystem *</Label>
                     <Select name="heizsystem" onValueChange={handleSelectChange('heizsystem')} value={formData.heizsystem}>
