@@ -1,0 +1,57 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Heizungsplakette {
+  id                                   String   @id @default(cuid())
+  status                               String   @default("Ausstehend")
+  datenschutzUndNutzungsbedingungen    Boolean
+  einwilligungDatenverarbeitung        Boolean
+  aufforderungSofortigeTaetigkeit      Boolean
+  email                                String
+  artDerImmobilie                      String
+  artDerImmobilieSonstige              String?
+  heizungsart                          String?
+  alterDerHeizung                      String
+  heizungsartSonstige                  String?
+  strasse                              String
+  hausnummer                           String
+  postleitzahl                         String
+  ort                                  String
+  heizsystem                           String
+  heizsystemSonstige                   String?
+  heizungshersteller                   String
+  baujahr                              Int
+  typenbezeichnung                     String
+  typenbezeichnungUnbekannt            Boolean
+  heizungstechnik                      String
+  heizungstechnikSonstige              String?
+  energietraeger                       String
+  energietraegerSonstige               String?
+  energieausweis                       String
+  energieausweisDate                   String?
+  energielabel                         String
+  vorname                              String
+  nachname                             String
+  personStrasse                        String
+  personHausnummer                     String
+  personPostleitzahl                   String
+  personOrt                            String
+  istEigentuemer                       String
+  heizungsanlageFotos                  String[]
+  heizungsetiketteFotos                String[]
+  heizungslabelFotos                   String[]
+  bedienungsanleitungFotos             String[]
+  verzichtAufHeizungsanlageFotos       Boolean
+  verzichtAufHeizungsetiketteFotos     Boolean
+  verzichtAufHeizungslabelFotos        Boolean
+  verzichtAufBedienungsanleitungFotos  Boolean
+  confirmAccuracy                      Boolean
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
+}

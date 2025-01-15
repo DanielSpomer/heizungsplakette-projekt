@@ -17,7 +17,7 @@ export const metadata: Metadata = {
       { url: '/images/Heizungsplakette-FavIcon-180x180.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
-      { rel: 'mask-icon', url: '/images/Heizungsplakette-FavIcon.png', color: '#5bbad5' },
+      { rel: 'mask-icon', url: '/images/Heizungsplakette-FavIcon.svg', color: '#5bbad5' },
     ],
   },
   manifest: '/site.webmanifest',

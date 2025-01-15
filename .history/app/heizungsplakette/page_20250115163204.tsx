@@ -211,11 +211,8 @@ export default function HeizungsplaketteMaske() {
       if (!formData.verzichtAufHeizungsetiketteFotos && formData.heizungsetiketteFotos.length === 0) {
         newErrors.heizungsetiketteFotos = "Bitte laden Sie mindestens ein Foto der Heizungsetikette hoch oder verzichten Sie ausdrücklich darauf."
       }
-      // Only validate heizungslabelFotos if energielabel is 'Ja'
-      if (formData.energielabel === 'Ja') {
-        if (!formData.verzichtAufHeizungslabelFotos && formData.heizungslabelFotos.length === 0) {
-          newErrors.heizungslabelFotos = "Bitte laden Sie mindestens ein Foto des Heizungslabels hoch oder verzichten Sie ausdrücklich darauf."
-        }
+      if (!formData.verzichtAufHeizungslabelFotos && formData.heizungslabelFotos.length === 0) {
+        newErrors.heizungslabelFotos = "Bitte laden Sie mindestens ein Foto der Heizungslabel hoch oder verzichten Sie ausdrücklich darauf."
       }
       if (!formData.verzichtAufBedienungsanleitungFotos && formData.bedienungsanleitungFotos.length === 0) {
         newErrors.bedienungsanleitungFotos = "Bitte laden Sie mindestens ein Foto der Bedienungsanleitung hoch oder verzichten Sie ausdrücklich darauf."
@@ -639,8 +636,9 @@ export default function HeizungsplaketteMaske() {
                         <HelpCircle className="h-5 w-5 text-gray-400" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über dieTypenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
-                      </TooltipContent>                    </Tooltip>
+                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über die Typenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
+                      </TooltipContent>
+                      </Tooltip>
                   </TooltipProvider>
                 </div>
                 <div className="space-y-4">
@@ -1025,30 +1023,28 @@ export default function HeizungsplaketteMaske() {
                     </div>
                     {errors.heizungsetiketteFotos && <p className="text-red-500">{errors.heizungsetiketteFotos}</p>}
                   </div>
-                  {formData.energielabel === 'Ja' && (
-                    <div>
-                      <Label htmlFor="heizungslabelFotos" className="font-semibold">Fotos des Heizungslabels</Label>
-                      <Input
-                        id="heizungslabelFotos"
-                        name="heizungslabelFotos"
-                        type="file"
-                        multiple
-                        onChange={handleFileChange('heizungslabelFotos')}
-                        accept="image/*"
+                  <div>
+                    <Label htmlFor="heizungslabelFotos" className="font-semibold">Fotos des Heizungslabels</Label>
+                    <Input
+                      id="heizungslabelFotos"
+                      name="heizungslabelFotos"
+                      type="file"
+                      multiple
+                      onChange={handleFileChange('heizungslabelFotos')}
+                      accept="image/*"
+                    />
+                    <div className="flex items-center mt-2">
+                      <Checkbox
+                        id="verzichtAufHeizungslabelFotos"
+                        checked={formData.verzichtAufHeizungslabelFotos}
+                        onCheckedChange={handleCheckboxChange('verzichtAufHeizungslabelFotos')}
                       />
-                      <div className="flex items-center mt-2">
-                        <Checkbox
-                          id="verzichtAufHeizungslabelFotos"
-                          checked={formData.verzichtAufHeizungslabelFotos}
-                          onCheckedChange={handleCheckboxChange('verzichtAufHeizungslabelFotos')}
-                        />
-                        <Label htmlFor="verzichtAufHeizungslabelFotos" className="ml-2">
-                          Ich verzichte auf das Hochladen von Fotos des Heizungslabels
-                        </Label>
-                      </div>
-                      {errors.heizungslabelFotos && <p className="text-red-500">{errors.heizungslabelFotos}</p>}
+                      <Label htmlFor="verzichtAufHeizungslabelFotos" className="ml-2">
+                        Ich verzichte auf das Hochladen von Fotos des Heizungslabels
+                      </Label>
                     </div>
-                  )}
+                    {errors.heizungslabelFotos && <p className="text-red-500">{errors.heizungslabelFotos}</p>}
+                  </div>
                   <div>
                     <Label htmlFor="bedienungsanleitungFotos" className="font-semibold">Fotos der Bedienungsanleitung</Label>
                     <Input
@@ -1110,16 +1106,6 @@ export default function HeizungsplaketteMaske() {
                     <p>{formData.vorname} {formData.nachname}</p>
                     <p>{formData.personStrasse} {formData.personHausnummer}</p>
                     <p>{formData.personPostleitzahl} {formData.personOrt}</p>
-                    <p><strong>Eigentümer:</strong> {formData.istEigentuemer}</p>
-                    <div>
-                      <p><strong>Hochgeladene Fotos:</strong></p>
-                      <p>Heizungsanlage: {formData.heizungsanlageFotos.length > 0 ? `${formData.heizungsanlageFotos.length} Foto(s)` : 'Keine'}</p>
-                      <p>Heizungsetikette: {formData.heizungsetiketteFotos.length > 0 ? `${formData.heizungsetiketteFotos.length} Foto(s)` : 'Keine'}</p>
-                      {formData.energielabel === 'Ja' && (
-                        <p>Heizungslabel: {formData.heizungslabelFotos.length > 0 ? `${formData.heizungslabelFotos.length} Foto(s)` : 'Keine'}</p>
-                      )}
-                      <p>Bedienungsanleitung: {formData.bedienungsanleitungFotos.length > 0 ? `${formData.bedienungsanleitungFotos.length} Foto(s)` : 'Keine'}</p>
-                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox

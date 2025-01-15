@@ -211,11 +211,8 @@ export default function HeizungsplaketteMaske() {
       if (!formData.verzichtAufHeizungsetiketteFotos && formData.heizungsetiketteFotos.length === 0) {
         newErrors.heizungsetiketteFotos = "Bitte laden Sie mindestens ein Foto der Heizungsetikette hoch oder verzichten Sie ausdrücklich darauf."
       }
-      // Only validate heizungslabelFotos if energielabel is 'Ja'
-      if (formData.energielabel === 'Ja') {
-        if (!formData.verzichtAufHeizungslabelFotos && formData.heizungslabelFotos.length === 0) {
-          newErrors.heizungslabelFotos = "Bitte laden Sie mindestens ein Foto des Heizungslabels hoch oder verzichten Sie ausdrücklich darauf."
-        }
+      if (!formData.verzichtAufHeizungslabelFotos && formData.heizungslabelFotos.length === 0) {
+        newErrors.heizungslabelFotos = "Bitte laden Sie mindestens ein Foto der Heizungslabel hoch oder verzichten Sie ausdrücklich darauf."
       }
       if (!formData.verzichtAufBedienungsanleitungFotos && formData.bedienungsanleitungFotos.length === 0) {
         newErrors.bedienungsanleitungFotos = "Bitte laden Sie mindestens ein Foto der Bedienungsanleitung hoch oder verzichten Sie ausdrücklich darauf."
@@ -639,8 +636,9 @@ export default function HeizungsplaketteMaske() {
                         <HelpCircle className="h-5 w-5 text-gray-400" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über dieTypenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
-                      </TooltipContent>                    </Tooltip>
+                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über die Typenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
+                      </TooltipContent>
+                      </Tooltip>
                   </TooltipProvider>
                 </div>
                 <div className="space-y-4">
