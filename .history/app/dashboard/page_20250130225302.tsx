@@ -14,7 +14,7 @@ import { Search, MoreHorizontal, Edit, Eye, Check, X } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 type HeizungsplaketteItem = {
   id: number;

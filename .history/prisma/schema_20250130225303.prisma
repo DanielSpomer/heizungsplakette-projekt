@@ -14,6 +14,7 @@ model Heizungsplakette {
   einwilligungDatenverarbeitung        Boolean
   aufforderungSofortigeTaetigkeit      Boolean
   email                                String
+  alterDerHeizung                      String
   artDerImmobilie                      String
   artDerImmobilieSonstige              String?
   heizungsart                          String
@@ -34,6 +35,7 @@ model Heizungsplakette {
   energietraegerSonstige               String?
   energieausweis                       String
   energieausweisDate                   String?
+  energielabel                         String
   vorname                              String
   nachname                             String
   personStrasse                        String
