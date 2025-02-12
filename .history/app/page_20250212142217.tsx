@@ -260,7 +260,7 @@ export default function HeizungsplaketteHomepage() {
                 Impressum
               </Link>
               <Link href="/datenschutzerklaerung" className="text-gray-500 hover:text-gray-900 transition-colors">
-                Datenschutzerklärung
+                Datenschutz
               </Link>
             </nav>
           </div>

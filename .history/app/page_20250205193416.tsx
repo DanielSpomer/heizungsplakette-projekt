@@ -65,33 +65,33 @@ export default function HeizungsplaketteHomepage() {
       <section className="relative flex items-center justify-center min-h-screen px-4">
         <SquaresBackground />
         <motion.div 
-          className="text-center max-w-4xl mx-auto flex flex-col items-center justify-center"
+          className="text-center max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          <div className="flex flex-col items-center space-y-0">
-            <SplitText
-              text={`Heizungsplakette.\nDigital und sicher.`}
-              className="text-5xl md:text-7xl font-bold tracking-tight whitespace-pre-line leading-tight mb-16"
-              delay={50}
-              animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
-              animationTo={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
-              easing="easeOutQuint"
-              threshold={0.5}
-              rootMargin="-20%"
-              render={(text, index) => (
-                <span
-                  key={index}
-                  className={index === 0 ? 'text-[#1a1a1a] block' : 'text-[#4B6FFF] block'}
-                >
-                  {text}
-                </span>
-              )}
-            />
-          </div>
+          <SplitText
+            text="Heizungsplakette."
+            className="text-5xl md:text-7xl font-bold text-gray-900 tracking-tight mb-4"
+            delay={50}
+            animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
+            animationTo={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
+            easing="easeOutQuint"
+            threshold={0.5}
+            rootMargin="-20%"
+          />
+          <SplitText
+            text="Digital und sicher."
+            className="text-5xl md:text-7xl font-bold tracking-tight mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text"
+            delay={50}
+            animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
+            animationTo={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
+            easing="easeOutQuint"
+            threshold={0.5}
+            rootMargin="-20%"
+          />
           <motion.p 
-            className="text-xl md:text-2xl text-gray-600 mb-16"
+            className="text-xl md:text-2xl text-gray-600 mb-12 leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
@@ -102,7 +102,6 @@ export default function HeizungsplaketteHomepage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="mt-8"
           >
             <Button asChild className="bg-blue-600 text-white rounded-full px-8 py-6 text-lg font-medium hover:bg-blue-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl">
               <Link href="/heizungsplakette">
@@ -259,8 +258,11 @@ export default function HeizungsplaketteHomepage() {
               <Link href="/impressum" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Impressum
               </Link>
-              <Link href="/datenschutzerklaerung" className="text-gray-500 hover:text-gray-900 transition-colors">
-                Datenschutzerklärung
+              <Link href="/datenschutz" className="text-gray-500 hover:text-gray-900 transition-colors">
+                Datenschutz
+              </Link>
+              <Link href="/agb" className="text-gray-500 hover:text-gray-900 transition-colors">
+                AGB
               </Link>
             </nav>
           </div>

@@ -292,9 +292,9 @@ export default function HeizungsplaketteMaske() {
             verzichtAufHeizungslabelFotos: !!formData.verzichtAufHeizungslabelFotos,
             verzichtAufBedienungsanleitungFotos: !!formData.verzichtAufBedienungsanleitungFotos,
           };
-      
+
           const convertFilesToNames = (files: File[]): string[] => files.map(file => file.name);
-      
+
           const apiData = {
             ...dataToSend,
             heizungsanlageFotos: convertFilesToNames(dataToSend.heizungsanlageFotos),
@@ -302,7 +302,7 @@ export default function HeizungsplaketteMaske() {
             heizungslabelFotos: convertFilesToNames(dataToSend.heizungslabelFotos),
             bedienungsanleitungFotos: convertFilesToNames(dataToSend.bedienungsanleitungFotos),
           };
-      
+
           const response = await fetch('/api/heizungsplakette', {
             method: 'POST',
             headers: {
@@ -310,42 +310,22 @@ export default function HeizungsplaketteMaske() {
             },
             body: JSON.stringify(apiData),
           });
-      
+
           if (response.ok) {
             const result = await response.json();
             console.log('Heizungsplakette-Daten erfolgreich gespeichert:', result);
-      
-            // Send email after successful data save
-            const emailResponse = await fetch('/api/send-email', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                ...apiData,
-                id: result.id, // Include the ID from the saved data
-              }),
-            });
-      
-            if (emailResponse.ok) {
-              const emailResult = await emailResponse.json();
-              console.log('E-Mail erfolgreich gesendet:', emailResult);
-              router.push(`/confirmation?id=${result.id}`);
-            } else {
-              console.error('Fehler beim Senden der E-Mail');
-              // Here you could display an error message to the user about email sending failure
-              // but still redirect them to the confirmation page
-              router.push(`/confirmation?id=${result.id}&emailError=true`);
-            }
+            router.push(`/confirmation?id=${result.id}`);
           } else {
             console.error('Fehler beim Speichern der Heizungsplakette-Daten');
             // Here you could display an error message to the user
           }
         } catch (error) {
-          console.error('Fehler beim Speichern der Heizungsplakette-Daten oder Senden der E-Mail:', error);
+          console.error('Fehler beim Speichern der Heizungsplakette-Daten:', error);
           // Here you could display an error message to the user
         }
-      }}}
+      }
+    }
+  };
 
   const handleStepClick = (step: number) => {
     if (visitedSteps.includes(step) || step <= currentStep) {

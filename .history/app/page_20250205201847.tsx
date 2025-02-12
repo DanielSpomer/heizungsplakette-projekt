@@ -7,6 +7,8 @@ import Image from 'next/image'
 import { motion } from "framer-motion"
 import { useState, useEffect } from 'react'
 import SplitText from '@/components/SplitText'
+import StarBorder from '../components/StarBorder';
+
 
 function SquaresBackground() {
   return (
@@ -55,9 +57,14 @@ export default function HeizungsplaketteHomepage() {
               priority
             />
           </Link>
-          <Button asChild className="bg-blue-600 text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-blue-700 transition-all hover:scale-105">
-            <Link href="/heizungsplakette">Jetzt bestellen</Link>
-          </Button>
+          <StarBorder
+  as="button"
+  className="px-6 py-3 text-white font-semibold rounded-full bg-blue-600 hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105"
+  color="cyan"
+  speed="5s"
+>
+  Jetzt bestellen
+</StarBorder>
         </div>
       </header>
 
@@ -259,8 +266,11 @@ export default function HeizungsplaketteHomepage() {
               <Link href="/impressum" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Impressum
               </Link>
-              <Link href="/datenschutzerklaerung" className="text-gray-500 hover:text-gray-900 transition-colors">
-                Datenschutzerklärung
+              <Link href="/datenschutz" className="text-gray-500 hover:text-gray-900 transition-colors">
+                Datenschutz
+              </Link>
+              <Link href="/agb" className="text-gray-500 hover:text-gray-900 transition-colors">
+                AGB
               </Link>
             </nav>
           </div>

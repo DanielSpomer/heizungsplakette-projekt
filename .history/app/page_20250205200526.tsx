@@ -72,7 +72,7 @@ export default function HeizungsplaketteHomepage() {
         >
           <div className="flex flex-col items-center space-y-0">
             <SplitText
-              text={`Heizungsplakette.\nDigital und sicher.`}
+              text={`Heizungsplakette. Digital und sicher.`}
               className="text-5xl md:text-7xl font-bold tracking-tight whitespace-pre-line leading-tight mb-16"
               delay={50}
               animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
@@ -259,8 +259,11 @@ export default function HeizungsplaketteHomepage() {
               <Link href="/impressum" className="text-gray-500 hover:text-gray-900 transition-colors">
                 Impressum
               </Link>
-              <Link href="/datenschutzerklaerung" className="text-gray-500 hover:text-gray-900 transition-colors">
-                Datenschutzerklärung
+              <Link href="/datenschutz" className="text-gray-500 hover:text-gray-900 transition-colors">
+                Datenschutz
+              </Link>
+              <Link href="/agb" className="text-gray-500 hover:text-gray-900 transition-colors">
+                AGB
               </Link>
             </nav>
           </div>
