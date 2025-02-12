@@ -17,8 +17,6 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
 
-    console.log('Attempting login with:', username)
-
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -26,29 +24,17 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       })
 
-      const data = await response.json()
-
-      console.log('Login response:', data)
-
       if (response.ok) {
-        console.log('Login successful, verifying token')
-        const verifyResponse = await fetch('/api/auth/verify')
-        const verifyData = await verifyResponse.json()
-
-        if (verifyData.isAuthenticated) {
-          console.log('Token verified, redirecting to dashboard')
-          router.push('/dashboard')
-        } else {
-          console.log('Token verification failed')
-          setError('Authentication failed. Please try again.')
-        }
+        // Erfolgreicher Login
+        console.log('Login erfolgreich')
+        router.push('/dashboard')
       } else {
-        console.log('Login failed:', data.message)
-        setError(data.message || 'Login failed')
+        const data = await response.json()
+        setError(data.message || 'Login fehlgeschlagen')
       }
-    } catch (error: unknown) {
-      console.error('Login error:', error instanceof Error ? error.message : 'Unknown error')
-      setError('An error occurred. Please try again later.')
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.')
     }
   }
 

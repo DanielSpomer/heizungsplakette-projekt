@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -85,13 +85,34 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState('')
   const [editingItem, setEditingItem] = useState<HeizungsplaketteItem | null>(null)
   const [watchingItem, setWatchingItem] = useState<HeizungsplaketteItem | null>(null)
-  const [user, setUser] = useState(null)
   const [showDetails, setShowDetails] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
 
-  const fetchHeizungsplaketten = useCallback(async () => {
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/check')
+        if (!response.ok) {
+          throw new Error('Nicht authentifiziert')
+        }
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Authentifizierungsfehler:', error)
+        router.push('/login')
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (isLoading) {
+    return <div>Laden...</div>
+  }
+
+  const fetchHeizungsplaketten = async () => {
+    setIsLoading(true)
     try {
       const response = await fetch('/api/heizungsplakette')
       if (!response.ok) {
@@ -106,35 +127,10 @@ export default function Page() {
         description: "Die Heizungsplaketten konnten nicht geladen werden.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
-  }, [toast])
-
-  useEffect(() => {
-    const verifyTokenAndFetchData = async () => {
-      try {
-        const response = await fetch('/api/auth/verify')
-        const data = await response.json()
-
-        console.log('Auth verification response:', data)
-
-        if (!data.isAuthenticated) {
-          console.log('Not authenticated, redirecting to login')
-          router.push('/login')
-        } else {
-          console.log('Authenticated, setting user and fetching data')
-          setUser(data.user)
-          await fetchHeizungsplaketten()
-        }
-      } catch (error) {
-        console.error('Auth verification failed:', error)
-        router.push('/login')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    verifyTokenAndFetchData()
-  }, [router, fetchHeizungsplaketten])
+  }
 
   const handleLogout = async () => {
     try {
@@ -251,10 +247,6 @@ export default function Page() {
       setIsLoading(false);
     }
   };
-
-  if (isLoading) {
-    return <LoadingSpinner />
-  }
 
   return (
     <div className="container mx-auto py-6">

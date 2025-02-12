@@ -17,8 +17,6 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
 
-    console.log('Attempting login with:', username)
-
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -28,26 +26,15 @@ export default function LoginPage() {
 
       const data = await response.json()
 
-      console.log('Login response:', data)
-
       if (response.ok) {
-        console.log('Login successful, verifying token')
-        const verifyResponse = await fetch('/api/auth/verify')
-        const verifyData = await verifyResponse.json()
-
-        if (verifyData.isAuthenticated) {
-          console.log('Token verified, redirecting to dashboard')
-          router.push('/dashboard')
-        } else {
-          console.log('Token verification failed')
-          setError('Authentication failed. Please try again.')
-        }
+        console.log('Login successful, attempting to redirect to dashboard')
+        router.push('/dashboard')
       } else {
         console.log('Login failed:', data.message)
         setError(data.message || 'Login failed')
       }
-    } catch (error: unknown) {
-      console.error('Login error:', error instanceof Error ? error.message : 'Unknown error')
+    } catch (error) {
+      console.error('Login error:', error)
       setError('An error occurred. Please try again later.')
     }
   }

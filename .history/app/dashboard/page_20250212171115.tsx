@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -81,17 +81,53 @@ const LoadingSpinner = () => (
 );
 
 export default function Page() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [heizungsplaketten, setHeizungsplaketten] = useState<HeizungsplaketteItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [editingItem, setEditingItem] = useState<HeizungsplaketteItem | null>(null)
   const [watchingItem, setWatchingItem] = useState<HeizungsplaketteItem | null>(null)
-  const [user, setUser] = useState(null)
   const [showDetails, setShowDetails] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
 
-  const fetchHeizungsplaketten = useCallback(async () => {
+  useEffect(() => {
+    const loggedInStatus = localStorage.getItem('isLoggedIn')
+    if (loggedInStatus === 'true') {
+      setIsLoggedIn(true)
+      fetchHeizungsplaketten()
+    }
+  }, [])
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (username === 'Heizungsplakette' && password === 'Heizungsplakette2025!.!_safe') {
+      setIsLoggedIn(true)
+      localStorage.setItem('isLoggedIn', 'true')
+      toast({
+        title: "Erfolgreich eingeloggt",
+        description: "Willkommen im Dashboard.",
+      })
+      fetchHeizungsplaketten()
+    } else {
+      toast({
+        title: "Anmeldung fehlgeschlagen",
+        description: "Bitte überprüfen Sie Ihren Benutzernamen und Ihr Passwort.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    localStorage.removeItem('isLoggedIn')
+    router.push('/')
+  }
+
+  const fetchHeizungsplaketten = async () => {
+    setIsLoading(true)
     try {
       const response = await fetch('/api/heizungsplakette')
       if (!response.ok) {
@@ -106,46 +142,10 @@ export default function Page() {
         description: "Die Heizungsplaketten konnten nicht geladen werden.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
-  }, [toast])
-
-  useEffect(() => {
-    const verifyTokenAndFetchData = async () => {
-      try {
-        const response = await fetch('/api/auth/verify')
-        const data = await response.json()
-
-        console.log('Auth verification response:', data)
-
-        if (!data.isAuthenticated) {
-          console.log('Not authenticated, redirecting to login')
-          router.push('/login')
-        } else {
-          console.log('Authenticated, setting user and fetching data')
-          setUser(data.user)
-          await fetchHeizungsplaketten()
-        }
-      } catch (error) {
-        console.error('Auth verification failed:', error)
-        router.push('/login')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    verifyTokenAndFetchData()
-  }, [router, fetchHeizungsplaketten])
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (response.ok) {
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  }
 
   const filteredHeizungsplaketten = heizungsplaketten.filter(item =>
     Object.values(item).some(value => 
@@ -252,8 +252,35 @@ export default function Page() {
     }
   };
 
-  if (isLoading) {
-    return <LoadingSpinner />
+  if (!isLoggedIn) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Card className="w-[350px]">
+          <CardContent className="pt-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Benutzername</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Passwort</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <Button type="submit" className="w-full">Anmelden</Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

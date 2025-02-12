@@ -1,0 +1,510 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Search, MoreHorizontal, Edit, Eye, Check, X } from 'lucide-react'
+import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/hooks/use-toast"
+
+type HeizungsplaketteItem = {
+  id: number;
+  datenschutzUndNutzungsbedingungen: boolean;
+  einwilligungDatenverarbeitung: boolean;
+  aufforderungSofortigeTaetigkeit: boolean;
+  email: string;
+  artDerImmobilie: string;
+  artDerImmobilieSonstige: string;
+  heizungsart: string;
+  heizungsartSonstige: string;
+  strasse: string;
+  hausnummer: string;
+  postleitzahl: string;
+  ort: string;
+  heizsystem: string;
+  heizsystemSonstige: string;
+  heizungshersteller: string;
+  baujahr: number;
+  typenbezeichnung: string;
+  typenbezeichnungUnbekannt: boolean;
+  heizungstechnik: string;
+  heizungstechnikSonstige: string;
+  energietraeger: string;
+  energietraegerSonstige: string;
+  energieausweis: string;
+  energieausweisDate: string;
+  vorname: string;
+  nachname: string;
+  personStrasse: string;
+  personHausnummer: string;
+  personPostleitzahl: string;
+  personOrt: string;
+  istEigentuemer: string;
+  heizungsanlageFotos: string[];
+  heizungsetiketteFotos: string[];
+  heizungslabelFotos: string[];
+  bedienungsanleitungFotos: string[];
+  verzichtAufHeizungsanlageFotos: boolean;
+  verzichtAufHeizungsetiketteFotos: boolean;
+  verzichtAufHeizungslabelFotos: boolean;
+  verzichtAufBedienungsanleitungFotos: boolean;
+  status: string;
+}
+
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'Ausstehend':
+      return 'bg-yellow-200 text-yellow-800'
+    case 'Genehmigt':
+      return 'bg-green-200 text-green-800'
+    case 'Abgelehnt':
+      return 'bg-red-200 text-red-800'
+    default:
+      return 'bg-gray-200 text-gray-800'
+  }
+}
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+  </div>
+);
+
+export default function Page() {
+  const [heizungsplaketten, setHeizungsplaketten] = useState<HeizungsplaketteItem[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [editingItem, setEditingItem] = useState<HeizungsplaketteItem | null>(null)
+  const [watchingItem, setWatchingItem] = useState<HeizungsplaketteItem | null>(null)
+  const [user, setUser] = useState(null)
+  const [showDetails, setShowDetails] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
+  const router = useRouter()
+
+  const fetchHeizungsplaketten = useCallback(async () => {
+    try {
+      const response = await fetch('/api/heizungsplakette')
+      if (!response.ok) {
+        throw new Error('Fehler beim Abrufen der Daten')
+      }
+      const data = await response.json()
+      setHeizungsplaketten(data)
+    } catch (error) {
+      console.error('Fehler beim Abrufen der Heizungsplaketten:', error)
+      toast({
+        title: "Fehler",
+        description: "Die Heizungsplaketten konnten nicht geladen werden.",
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
+  useEffect(() => {
+    const verifyTokenAndFetchData = async () => {
+      try {
+        const response = await fetch('/api/auth/verify')
+        const data = await response.json()
+
+        console.log('Auth verification response:', data)
+
+        if (!data.isAuthenticated) {
+          console.log('Not authenticated, redirecting to login')
+          router.push('/login')
+        } else {
+          console.log('Authenticated, setting user and fetching data')
+          setUser(data.user)
+          await fetchHeizungsplaketten()
+        }
+      } catch (error) {
+        console.error('Auth verification failed:', error)
+        router.push('/login')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    verifyTokenAndFetchData()
+  }, [router, fetchHeizungsplaketten])
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (response.ok) {
+        router.push('/login');
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const filteredHeizungsplaketten = heizungsplaketten.filter(item =>
+    Object.values(item).some(value => 
+      typeof value === 'string' && value.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  )
+
+  const handleEdit = (item: HeizungsplaketteItem) => {
+    setEditingItem({ ...item })
+  }
+
+  const handleSave = async () => {
+    if (editingItem) {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/heizungsplakette/${editingItem.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editingItem),
+        });
+
+        if (!response.ok) {
+          throw new Error('Fehler beim Speichern der Änderungen');
+        }
+
+        await fetchHeizungsplaketten();
+        setEditingItem(null);
+        toast({
+          title: "Gespeichert",
+          description: "Die Änderungen wurden erfolgreich gespeichert.",
+        });
+      } catch (error) {
+        console.error('Fehler beim Speichern der Änderungen:', error);
+        toast({
+          title: "Fehler",
+          description: "Die Änderungen konnten nicht gespeichert werden.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleWatch = (item: HeizungsplaketteItem) => {
+    setWatchingItem(item)
+  }
+
+  const handleApprove = async (id: number) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/heizungsplakette/${id}/approve`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler bei der Genehmigung der Heizungsplakette');
+      }
+
+      await fetchHeizungsplaketten();
+      toast({
+        title: "Genehmigt",
+        description: "Die Heizungsplakette wurde erfolgreich genehmigt.",
+      });
+    } catch (error) {
+      console.error('Fehler bei der Genehmigung der Heizungsplakette:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Heizungsplakette konnte nicht genehmigt werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/heizungsplakette/${id}/reject`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Fehler bei der Ablehnung der Heizungsplakette');
+      }
+
+      await fetchHeizungsplaketten();
+      toast({
+        title: "Abgelehnt",
+        description: "Die Heizungsplakette wurde abgelehnt.",
+      });
+    } catch (error) {
+      console.error('Fehler bei der Ablehnung der Heizungsplakette:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Heizungsplakette konnte nicht abgelehnt werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return <LoadingSpinner />
+  }
+
+  return (
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Heizungsplaketten Dashboard</h1>
+        <Button onClick={handleLogout}>Abmelden</Button>
+      </div>
+
+      <Card className="mb-6">
+        <CardContent className="p-6 flex justify-between items-center">
+          <div className="relative w-64">
+            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+            <Input
+              type="search"
+              placeholder="Suche..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="show-details"
+              checked={showDetails}
+              onCheckedChange={setShowDetails}
+            />
+            <Label htmlFor="show-details">Details anzeigen</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="border rounded-md overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Art der Immobilie</TableHead>
+              <TableHead>Heizungsart</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>E-Mail</TableHead>
+              {showDetails && (
+                <>
+                  <TableHead>Vorname</TableHead>
+                  <TableHead>Nachname</TableHead>
+                  <TableHead>Straße</TableHead>
+                  <TableHead>Hausnummer</TableHead>
+                  <TableHead>PLZ</TableHead>
+                  <TableHead>Ort</TableHead>
+                  <TableHead>Heizungshersteller</TableHead>
+                  <TableHead>Baujahr</TableHead>
+                  <TableHead>Heizsystem</TableHead>
+                  <TableHead>Heizungstechnik</TableHead>
+                  <TableHead>Energieträger</TableHead>
+                </>
+              )}
+              <TableHead>Aktionen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredHeizungsplaketten.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.artDerImmobilie}</TableCell>
+                <TableCell>{item.heizungsart}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
+                </TableCell>
+                <TableCell>{item.email}</TableCell>
+                {showDetails && (
+                  <>
+                    <TableCell>{item.vorname}</TableCell>
+                    <TableCell>{item.nachname}</TableCell>
+                    <TableCell>{item.strasse}</TableCell>
+                    <TableCell>{item.hausnummer}</TableCell>
+                    <TableCell>{item.postleitzahl}</TableCell>
+                    <TableCell>{item.ort}</TableCell>
+                    <TableCell>{item.heizungshersteller}</TableCell>
+                    <TableCell>{item.baujahr}</TableCell>
+                    <TableCell>{item.heizsystem}</TableCell>
+                    <TableCell>{item.heizungstechnik}</TableCell>
+                    <TableCell>{item.energietraeger}</TableCell>
+                  </>
+                )}
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Menü öffnen</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(item)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Bearbeiten
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleWatch(item)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Beobachten
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isLoading || item.status === 'Genehmigt'}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Genehmigen
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleReject(item.id)} disabled={isLoading || item.status === 'Abgelehnt'}>
+                        <X className="mr-2 h-4 w-4" />
+                        Ablehnen
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={editingItem !== null} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Heizungsplakette bearbeiten</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="artDerImmobilie">Art der Immobilie</Label>
+                  <Select
+                    value={editingItem.artDerImmobilie}
+                    onValueChange={(value) => setEditingItem({...editingItem, artDerImmobilie: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wählen Sie die Art der Immobilie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Einfamilienhaus">Einfamilienhaus</SelectItem>
+                      <SelectItem value="Mehrfamilienhaus">Mehrfamilienhaus</SelectItem>
+                      <SelectItem value="Doppelhaushälfte">Doppelhaushälfte</SelectItem>
+                      <SelectItem value="Reihenhaus">Reihenhaus</SelectItem>
+                      <SelectItem value="Sonstige">Sonstige</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="heizungsart">Heizungsart</Label>
+                  <Select
+                    value={editingItem.heizungsart}
+                    onValueChange={(value) => setEditingItem({...editingItem, heizungsart: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wählen Sie die Heizungsart" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Gasheizung">Gasheizung</SelectItem>
+                      <SelectItem value="Öl Heizung">Öl Heizung</SelectItem>
+                      <SelectItem value="Wärmepumpe">Wärmepumpe</SelectItem>
+                      <SelectItem value="Fernwärme">Fernwärme</SelectItem>
+                      <SelectItem value="Sonstige">Sonstige</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="email">E-Mail</Label>
+                  <Input
+                    id="email"
+                    value={editingItem.email}
+                    onChange={(e) => setEditingItem({...editingItem, email: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vorname">Vorname</Label>
+                  <Input
+                    id="vorname"
+                    value={editingItem.vorname}
+                    onChange={(e) => setEditingItem({...editingItem, vorname: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nachname">Nachname</Label>
+                  <Input
+                    id="nachname"
+                    value={editingItem.nachname}
+                    onChange={(e) => setEditingItem({...editingItem, nachname: e.target.value})}
+                  />
+                </div>
+                {/* Add more form fields for other properties */}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={handleSave} disabled={isLoading}>
+              {isLoading ? 'Wird gespeichert...' : 'Speichern'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={watchingItem !== null} onOpenChange={() => setWatchingItem(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Heizungsplakette Details</DialogTitle>
+          </DialogHeader>
+          {watchingItem && (
+            <Tabs defaultValue="seite1" className="w-full">
+              <TabsList>
+                <TabsTrigger value="seite1">Seite 1</TabsTrigger>
+                <TabsTrigger value="seite2">Seite 2</TabsTrigger>
+                <TabsTrigger value="seite3">Seite 3</TabsTrigger>
+              </TabsList>
+              <TabsContent value="seite1">
+                <div className="grid gap-4 py-4">
+                  <div><strong>Art der Immobilie:</strong> {watchingItem.artDerImmobilie}</div>
+                  <div><strong>Heizungsart:</strong> {watchingItem.heizungsart}</div>
+                  <div><strong>E-Mail:</strong> {watchingItem.email}</div>
+                  <div><strong>Status:</strong> {watchingItem.status}</div>
+                  <div><strong>Vorname:</strong> {watchingItem.vorname}</div>
+                  <div><strong>Nachname:</strong> {watchingItem.nachname}</div>
+                  <div><strong>Straße:</strong> {watchingItem.strasse}</div>
+                  <div><strong>Hausnummer:</strong> {watchingItem.hausnummer}</div>
+                  <div><strong>PLZ:</strong> {watchingItem.postleitzahl}</div>
+                  <div><strong>Ort:</strong> {watchingItem.ort}</div>
+                </div>
+              </TabsContent>
+              <TabsContent value="seite2">
+                <div className="grid gap-4 py-4">
+                  <div><strong>Heizungshersteller:</strong> {watchingItem.heizungshersteller}</div>
+                  <div><strong>Baujahr:</strong> {watchingItem.baujahr}</div>
+                  <div><strong>Heizsystem:</strong> {watchingItem.heizsystem}</div>
+                  <div><strong>Heizungstechnik:</strong> {watchingItem.heizungstechnik}</div>
+                  <div><strong>Energieträger:</strong> {watchingItem.energietraeger}</div>
+                  <div><strong>Typenbezeichnung:</strong> {watchingItem.typenbezeichnung}</div>
+                  <div><strong>Typenbezeichnung unbekannt:</strong> {watchingItem.typenbezeichnungUnbekannt ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Energieausweis:</strong> {watchingItem.energieausweis}</div>
+                  <div><strong>Energieausweis Datum:</strong> {watchingItem.energieausweisDate}</div>
+                </div>
+              </TabsContent>
+              <TabsContent value="seite3">
+                <div className="grid gap-4 py-4">
+                  <div><strong>Ist Eigentümer:</strong> {watchingItem.istEigentuemer}</div>
+                  <div><strong>Datenschutz und Nutzungsbedingungen:</strong> {watchingItem.datenschutzUndNutzungsbedingungen ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Einwilligung Datenverarbeitung:</strong> {watchingItem.einwilligungDatenverarbeitung ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Aufforderung sofortige Tätigkeit:</strong> {watchingItem.aufforderungSofortigeTaetigkeit ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Verzicht auf Heizungsanlage Fotos:</strong> {watchingItem.verzichtAufHeizungsanlageFotos ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Verzicht auf Heizungsetikette Fotos:</strong> {watchingItem.verzichtAufHeizungsetiketteFotos ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Verzicht auf Heizungslabel Fotos:</strong> {watchingItem.verzichtAufHeizungslabelFotos ? 'Ja' : 'Nein'}</div>
+                  <div><strong>Verzicht auf Bedienungsanleitung Fotos:</strong> {watchingItem.verzichtAufBedienungsanleitungFotos ? 'Ja' : 'Nein'}</div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
