@@ -282,7 +282,14 @@ export default function HeizungsplaketteMaske() {
       if (currentStep < 7) {
         setCurrentStep(prev => prev + 1);
         setVisitedSteps(prev => Array.from(new Set([...prev, currentStep + 1])));
-        
+        const dataToSend = {
+          ...formData,
+          baujahr: parseInt(formData.baujahr, 10),
+          verzichtAufHeizungsanlageFotos: !!formData.verzichtAufHeizungsanlageFotos,
+          verzichtAufHeizungsetiketteFotos: !!formData.verzichtAufHeizungsetiketteFotos,
+          verzichtAufHeizungslabelFotos: !!formData.verzichtAufHeizungslabelFotos,
+          verzichtAufBedienungsanleitungFotos: !!formData.verzichtAufBedienungsanleitungFotos,
+        };
       } else {
         try {
           const dataToSend = {

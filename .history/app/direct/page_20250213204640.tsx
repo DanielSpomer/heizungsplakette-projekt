@@ -176,12 +176,12 @@ export default function HeizungsplaketteMaske() {
       }
       if (!formData.alterDerHeizung) newErrors.alterDerHeizung = "Bitte wählen Sie das Alter der Heizung."
       if (!formData.email) newErrors.email = "Bitte geben Sie Ihre E-Mail-Adresse ein."
-    } else if (step === 4) {
+    } else if (step === 3) {
       if (!formData.strasse) newErrors.strasse = "Bitte geben Sie die Straße an."
       if (!formData.hausnummer) newErrors.hausnummer = "Bitte geben Sie die Hausnummer an."
       if (!formData.postleitzahl) newErrors.postleitzahl = "Bitte geben Sie die Postleitzahl an."
       if (!formData.ort) newErrors.ort = "Bitte geben Sie den Ort an."
-    } else if (step === 5) {
+    } else if (step === 4) {
       if (!formData.baujahr) {
         newErrors.baujahr = "Bitte geben Sie das Baujahr der Heizung an."
       } else {
@@ -214,7 +214,7 @@ export default function HeizungsplaketteMaske() {
       if (!formData.personPostleitzahl) newErrors.personPostleitzahl = "Bitte geben Sie Ihre Postleitzahl an."
       if (!formData.personOrt) newErrors.personOrt = "Bitte geben Sie Ihren Ort an."
       if (!formData.istEigentuemer) newErrors.istEigentuemer = "Bitte geben Sie an, ob Sie der Eigentümer sind."
-    } else if (step === 6) {
+    } else if (step === 5) {
       if (!formData.verzichtAufHeizungsanlageFotos && formData.heizungsanlageFotos.length === 0) {
         newErrors.heizungsanlageFotos = "Bitte laden Sie mindestens ein Foto (maximal 3) der Heizungsanlage hoch oder verzichten Sie ausdrücklich darauf."
       }
@@ -229,7 +229,7 @@ export default function HeizungsplaketteMaske() {
       if (!formData.verzichtAufBedienungsanleitungFotos && formData.bedienungsanleitungFotos.length === 0) {
         newErrors.bedienungsanleitungFotos = "Bitte laden Sie mindestens ein Foto (maximal 3) der Bedienungsanleitung hoch oder verzichten Sie ausdrücklich darauf."
       }
-    } else if (step === 7) {
+    } else if (step === 6) {
       if (!formData.confirmAccuracy) newErrors.confirmAccuracy = "Bitte bestätigen Sie die Richtigkeit Ihrer Angaben."
     }
 
@@ -266,10 +266,10 @@ export default function HeizungsplaketteMaske() {
     e.preventDefault();
     const isValid = validateStep(currentStep);
     if (isValid) {
-      if (currentStep === 4) {
+      if (currentStep === 3) {
         const isAddressValid = await validateAddress();
         if (!isAddressValid) return;
-        if (currentStep === 4 && isAddressValid) {
+        if (currentStep === 3 && isAddressValid) {
           setFormData(prev => ({
             ...prev,
             personStrasse: prev.strasse,
@@ -279,10 +279,9 @@ export default function HeizungsplaketteMaske() {
           }));
         }
       }
-      if (currentStep < 7) {
+      if (currentStep < 6) {
         setCurrentStep(prev => prev + 1);
         setVisitedSteps(prev => Array.from(new Set([...prev, currentStep + 1])));
-        
       } else {
         try {
           const dataToSend = {
@@ -377,10 +376,10 @@ export default function HeizungsplaketteMaske() {
         <div className="bg-white shadow-md rounded-lg p-6">
           <div className="mb-8">
             <div className="flex justify-between items-center">
-              {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+              {[1, 2, 3, 4, 5, 6].map((step) => (
                 <div 
                   key={step} 
-                  className={`w-1/7 text-center cursor-pointer
+                  className={`w-1/6 text-center cursor-pointer
                     ${currentStep === step ? 'text-blue-600 font-bold' : 
                     visitedSteps.includes(step) ? 'text-blue-600 font-bold' : 'text-gray-400'}`}
                   onClick={() => handleStepClick(step)}
@@ -392,7 +391,7 @@ export default function HeizungsplaketteMaske() {
             <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
               <div 
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
-                style={{ width: `${(currentStep / 7) * 100}%` }}
+                style={{ width: `${(currentStep / 6) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -556,36 +555,6 @@ export default function HeizungsplaketteMaske() {
 
             {currentStep === 3 && (
               <>
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <CreditCard className="mr-2 text-blue-600" />
-                  Bezahlung
-                </h2>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="text-lg font-semibold mb-2">Heizungsplakette – Ihre Sicherheit auf einen Blick</h3>
-                    <p className="text-gray-600 mb-4">Bestellen Sie Ihre Heizungsplakette</p>
-                    <div className="flex justify-between items-center py-2 border-t border-gray-200">
-                      <span>Preis (inkl. MwSt)</span>
-                      <span className="font-semibold">49,00 €</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-center">
-                    <Button 
-                      onClick={() => window.open('https://copecart.com/products/795e1d47/checkout', '_blank')}
-                      className="w-full max-w-md"
-                    >
-                      Zur Bezahlung
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500 text-center">
-                    Sichere Bezahlung über Copecart
-                  </p>
-                </div>
-              </>
-            )}
-
-            {currentStep === 4 && (
-              <>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold mb-4 flex items-center">
                     <MapPin className="mr-2 text-blue-600" />
@@ -655,7 +624,7 @@ export default function HeizungsplaketteMaske() {
               </>
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 4 && (
               <>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -991,7 +960,7 @@ export default function HeizungsplaketteMaske() {
               </>
             )}
 
-            {currentStep === 6 && (
+            {currentStep === 5 && (
               <>
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -1107,7 +1076,7 @@ export default function HeizungsplaketteMaske() {
               </>
             )}
 
-            {currentStep === 7 && (
+            {currentStep === 6 && (
               <>
                 <h2 className="text-xl font-semibold mb-4 flex items-center">
                   <CheckCircle className="mr-2 text-blue-600" />
@@ -1193,7 +1162,7 @@ export default function HeizungsplaketteMaske() {
                 Zurück
               </Button>
               <Button type="submit">
-                {currentStep < 7 ? 'Weiter' : 'Absenden'}
+                {currentStep < 6 ? 'Weiter' : 'Absenden'}
               </Button>
             </div>
           </form>

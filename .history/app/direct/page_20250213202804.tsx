@@ -282,7 +282,6 @@ export default function HeizungsplaketteMaske() {
       if (currentStep < 7) {
         setCurrentStep(prev => prev + 1);
         setVisitedSteps(prev => Array.from(new Set([...prev, currentStep + 1])));
-        
       } else {
         try {
           const dataToSend = {
@@ -550,36 +549,6 @@ export default function HeizungsplaketteMaske() {
                     />
                     {errors.email && <p className="text-red-500">{errors.email}</p>}
                   </div>
-                </div>
-              </>
-            )}
-
-            {currentStep === 3 && (
-              <>
-                <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <CreditCard className="mr-2 text-blue-600" />
-                  Bezahlung
-                </h2>
-                <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="text-lg font-semibold mb-2">Heizungsplakette – Ihre Sicherheit auf einen Blick</h3>
-                    <p className="text-gray-600 mb-4">Bestellen Sie Ihre Heizungsplakette</p>
-                    <div className="flex justify-between items-center py-2 border-t border-gray-200">
-                      <span>Preis (inkl. MwSt)</span>
-                      <span className="font-semibold">49,00 €</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-center">
-                    <Button 
-                      onClick={() => window.open('https://copecart.com/products/795e1d47/checkout', '_blank')}
-                      className="w-full max-w-md"
-                    >
-                      Zur Bezahlung
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500 text-center">
-                    Sichere Bezahlung über Copecart
-                  </p>
                 </div>
               </>
             )}
