@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ClipboardList, Home, MapPin, Camera, CheckCircle, CreditCard, Thermometer, Building, Calendar, FileText, User, Key, Factory, HelpCircle } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import Script from 'next/script'
 
 interface FormData {
   datenschutzUndNutzungsbedingungen: boolean;
@@ -144,8 +143,19 @@ export default function HeizungsplaketteMaske() {
 
   const handleFileChange = (name: keyof Pick<FormData, 'heizungsanlageFotos' | 'heizungsetiketteFotos' | 'heizungslabelFotos' | 'bedienungsanleitungFotos'>) => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const filesArray = Array.from(e.target.files)
-      setFormData(prev => ({ ...prev, [name]: filesArray }))
+      const maxFiles = name === 'heizungslabelFotos' ? 1 : 3;
+      const filesArray = Array.from(e.target.files).slice(0, maxFiles);
+      setFormData(prev => ({ ...prev, [name]: filesArray }));
+      
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        if (e.target.files && e.target.files.length > maxFiles) {
+          newErrors[name] = `Maximal ${maxFiles} Foto${maxFiles > 1 ? 's' : ''} erlaubt.`;
+        } else {
+          delete newErrors[name];
+        }
+        return newErrors;
+      });
     }
   }
 
@@ -192,7 +202,7 @@ export default function HeizungsplaketteMaske() {
       if (formData.energietraeger === 'Sonstige' && !formData.energietraegerSonstige) {
         newErrors.energietraegerSonstige = "Bitte spezifizieren Sie den Energieträger."
       }
-      if (!formData.energielabel) newErrors.energielabel = "Bitte geben Sie an, ob ein Energielabel existiert."
+      if (!formData.energielabel) newErrors.energielabel = "Bitte geben Sie an, ob ein Heizungslabel existiert."
       if (!formData.energieausweis) newErrors.energieausweis = "Bitte geben Sie an, ob ein Energieausweis vorliegt."
       if (formData.energieausweis === 'Ja' && !formData.energieausweisDate) {
         newErrors.energieausweisDate = "Bitte geben Sie das Datum des Energieausweises an."
@@ -206,16 +216,18 @@ export default function HeizungsplaketteMaske() {
       if (!formData.istEigentuemer) newErrors.istEigentuemer = "Bitte geben Sie an, ob Sie der Eigentümer sind."
     } else if (step === 6) {
       if (!formData.verzichtAufHeizungsanlageFotos && formData.heizungsanlageFotos.length === 0) {
-        newErrors.heizungsanlageFotos = "Bitte laden Sie mindestens ein Foto der Heizungsanlage hoch oder verzichten Sie ausdrücklich darauf."
+        newErrors.heizungsanlageFotos = "Bitte laden Sie mindestens ein Foto (maximal 3) der Heizungsanlage hoch oder verzichten Sie ausdrücklich darauf."
       }
       if (!formData.verzichtAufHeizungsetiketteFotos && formData.heizungsetiketteFotos.length === 0) {
-        newErrors.heizungsetiketteFotos = "Bitte laden Sie mindestens ein Foto der Heizungsetikette hoch oder verzichten Sie ausdrücklich darauf."
+        newErrors.heizungsetiketteFotos = "Bitte laden Sie mindestens ein Foto (maximal 3) der Typenschildes hoch oder verzichten Sie ausdrücklich darauf."
       }
-      if (!formData.verzichtAufHeizungslabelFotos && formData.heizungslabelFotos.length === 0) {
-        newErrors.heizungslabelFotos = "Bitte laden Sie mindestens ein Foto der Heizungslabel hoch oder verzichten Sie ausdrücklich darauf."
+      if (formData.energielabel === 'Ja') {
+        if (!formData.verzichtAufHeizungslabelFotos && formData.heizungslabelFotos.length === 0) {
+          newErrors.heizungslabelFotos = "Bitte laden Sie ein Foto des Heizungslabels hoch oder verzichten Sie ausdrücklich darauf."
+        }
       }
       if (!formData.verzichtAufBedienungsanleitungFotos && formData.bedienungsanleitungFotos.length === 0) {
-        newErrors.bedienungsanleitungFotos = "Bitte laden Sie mindestens ein Foto der Bedienungsanleitung hoch oder verzichten Sie ausdrücklich darauf."
+        newErrors.bedienungsanleitungFotos = "Bitte laden Sie mindestens ein Foto (maximal 3) der Bedienungsanleitung hoch oder verzichten Sie ausdrücklich darauf."
       }
     } else if (step === 7) {
       if (!formData.confirmAccuracy) newErrors.confirmAccuracy = "Bitte bestätigen Sie die Richtigkeit Ihrer Angaben."
@@ -270,6 +282,7 @@ export default function HeizungsplaketteMaske() {
       if (currentStep < 7) {
         setCurrentStep(prev => prev + 1);
         setVisitedSteps(prev => Array.from(new Set([...prev, currentStep + 1])));
+        
       } else {
         try {
           const dataToSend = {
@@ -280,9 +293,9 @@ export default function HeizungsplaketteMaske() {
             verzichtAufHeizungslabelFotos: !!formData.verzichtAufHeizungslabelFotos,
             verzichtAufBedienungsanleitungFotos: !!formData.verzichtAufBedienungsanleitungFotos,
           };
-
+      
           const convertFilesToNames = (files: File[]): string[] => files.map(file => file.name);
-
+      
           const apiData = {
             ...dataToSend,
             heizungsanlageFotos: convertFilesToNames(dataToSend.heizungsanlageFotos),
@@ -290,7 +303,7 @@ export default function HeizungsplaketteMaske() {
             heizungslabelFotos: convertFilesToNames(dataToSend.heizungslabelFotos),
             bedienungsanleitungFotos: convertFilesToNames(dataToSend.bedienungsanleitungFotos),
           };
-
+      
           const response = await fetch('/api/heizungsplakette', {
             method: 'POST',
             headers: {
@@ -298,22 +311,42 @@ export default function HeizungsplaketteMaske() {
             },
             body: JSON.stringify(apiData),
           });
-
+      
           if (response.ok) {
             const result = await response.json();
             console.log('Heizungsplakette-Daten erfolgreich gespeichert:', result);
-            router.push(`/confirmation?id=${result.id}`);
+      
+            // Send email after successful data save
+            const emailResponse = await fetch('/api/send-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...apiData,
+                id: result.id, // Include the ID from the saved data
+              }),
+            });
+      
+            if (emailResponse.ok) {
+              const emailResult = await emailResponse.json();
+              console.log('E-Mail erfolgreich gesendet:', emailResult);
+              router.push(`/confirmation?id=${result.id}`);
+            } else {
+              console.error('Fehler beim Senden der E-Mail');
+              // Here you could display an error message to the user about email sending failure
+              // but still redirect them to the confirmation page
+              router.push(`/confirmation?id=${result.id}&emailError=true`);
+            }
           } else {
             console.error('Fehler beim Speichern der Heizungsplakette-Daten');
             // Here you could display an error message to the user
           }
         } catch (error) {
-          console.error('Fehler beim Speichern der Heizungsplakette-Daten:', error);
+          console.error('Fehler beim Speichern der Heizungsplakette-Daten oder Senden der E-Mail:', error);
           // Here you could display an error message to the user
         }
-      }
-    }
-  };
+      }}}
 
   const handleStepClick = (step: number) => {
     if (visitedSteps.includes(step) || step <= currentStep) {
@@ -332,11 +365,10 @@ export default function HeizungsplaketteMaske() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Script async src="https://js.stripe.com/v3/buy-button.js" />
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <Link href="/">
-            <Image src="/images/heizungsplakette-logo.png" alt="Heizungsplakette Logo" width={250} height={50} />
+            <Image src="/images/heizungsplakette-logo.png" alt="Heizungsplakette Logo" width={200} height={100} />
           </Link>
         </div>
       </header>
@@ -396,7 +428,7 @@ export default function HeizungsplaketteMaske() {
                       onCheckedChange={handleCheckboxChange('einwilligungDatenverarbeitung')}
                     />
                     <Label htmlFor="einwilligungDatenverarbeitung">
-                      Ich erkläre mich mit der Verarbeitung meiner personenbezogenen Daten zum Zweck der Übermittlung weiterer Informationen rund um die Heizungsplakette, das GEG sowie weiterer fachlicher und/oder technischer Informationen und der Kontaktaufnahme per Telefon und/oder E-Mail einverstanden und kann diese Einwilligungserklärung gegenüber der heizungsplakette.de GmbH jederzeit widerrufen
+                      Ich erkläre mich mit der Verarbeitung meiner personenbezogenen Daten zum Zweck der Übermittlung weiterer Informationen rund um die Heizungsplakette, das GEG sowie weiterer fachlicher und/oder technischer Informationen und der Kontaktaufnahme per Telefon und/oder E-Mail einverstanden und kann diese Einwilligungserklärung gegenüber dem Anbieter jederzeit widerrufen
                     </Label>
                   </div>
 
@@ -500,8 +532,8 @@ export default function HeizungsplaketteMaske() {
                       <SelectContent>
                         <SelectItem value="weniger als 10 Jahre">weniger als 10 Jahre</SelectItem>
                         <SelectItem value="weniger als 20 Jahre">weniger als 20 Jahre</SelectItem>
-                        <SelectItem value="weniger 31 Jahre">weniger 31 Jahre</SelectItem>
-                        <SelectItem value="mehr als 30 Jahre">mehr als 30 Jahre</SelectItem>
+                        <SelectItem value="weniger als 30 Jahre">weniger als 30 Jahre</SelectItem>
+                        <SelectItem value="30 Jahre oder älter">30 Jahre oder älter</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.alterDerHeizung && <p className="text-red-500">{errors.alterDerHeizung}</p>}
@@ -537,14 +569,16 @@ export default function HeizungsplaketteMaske() {
                       <span className="font-semibold">49,00 €</span>
                     </div>
                   </div>
-                  <Button 
-                    onClick={() => window.location.href = 'https://copecart.com/products/795e1d47/checkout'} 
-                    className="w-full bg-[#4052FF] hover:bg-[#2C3BCC] text-white h-12 text-lg"
-                  >
-                    Jetzt zur sicheren Bezahlung
-                  </Button>
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => window.open('https://copecart.com/products/795e1d47/checkout', '_blank')}
+                      className="w-full max-w-md"
+                    >
+                      Zur Bezahlung
+                    </Button>
+                  </div>
                   <p className="text-sm text-gray-500 text-center">
-                    Sie werden zum sicheren Zahlungsformular weitergeleitet
+                    Sichere Bezahlung über Copecart
                   </p>
                 </div>
               </>
@@ -583,8 +617,7 @@ export default function HeizungsplaketteMaske() {
                   <div>
                     <Label htmlFor="hausnummer" className="font-semibold">Hausnummer *</Label>
                     <Input
-                      id="hausnummer"
-                      name="hausnummer"
+                      id="hausnummer"                      name="hausnummer"
                       value={formData.hausnummer}
                       onChange={handleInputChange}
                       placeholder="Hausnummer"
@@ -595,15 +628,14 @@ export default function HeizungsplaketteMaske() {
                     <Label htmlFor="postleitzahl" className="font-semibold">Postleitzahl *</Label>
                     <Input
                       id="postleitzahl"
-                      name="postleitzahl"
+                    name="postleitzahl"
                       value={formData.postleitzahl}
                       onChange={handleInputChange}
                       placeholder="PLZ"
                     />
                     {errors.postleitzahl && <p className="text-red-500">{errors.postleitzahl}</p>}
                   </div>
-                  <div>
-                    <Label htmlFor="ort" className="font-semibold">Ort *</Label>
+                  <div>                    <Label htmlFor="ort" className="font-semibold">Ort *</Label>
                     <Input
                       id="ort"
                       name="ort"
@@ -611,7 +643,7 @@ export default function HeizungsplaketteMaske() {
                       onChange={handleInputChange}
                       placeholder="Ort"
                     />
-                    {errors.ort && <p className="text-red-500">{errors.ort}</p>}
+                    {errors.ort && <p className="text-red-500">{errors.ort}                    </p>}
                   </div>
                   {addressValidationMessage && (
                     <Alert variant={addressValidationMessage.includes("erfolgreich") ? "default" : "destructive"}>
@@ -636,9 +668,8 @@ export default function HeizungsplaketteMaske() {
                         <HelpCircle className="h-5 w-5 text-gray-400" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob die Heizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr über die Typenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
-                      </TooltipContent>
-                      </Tooltip>
+                        <p>Wir benötigen die folgenden Angaben zur Heizung, damit die vielfältigen Möglichkeiten aus dem Heizungsgesetz so auf Ihre Heizung abgleichen können, dass wir Ihnen am Ende eine aussagekräftige Heizungsplakette ausstellen können. Das Baujahr der Heizung kann z.B. Einfluss darauf haben, ob dieHeizung weiter betrieben werden darf oder nicht. Auch die Heizungstechnik ist in diesem Zusammenhang sehr wichtig. Bitte geben Sie idealerweise auch den Gerätetypen zusätzlich zum Hersteller an. Sollten Sie das Baujahr nicht eindeutig herausfinden, werden wir versuchen, das Baujahr überdieTypenbezeichnung direkt beim Hersteller für Sie herauszufinden. Dann wäre die Übertragung der vollständigen Typenbezeichnung für uns sehr wichtig.</p>
+                      </TooltipContent>                    </Tooltip>
                   </TooltipProvider>
                 </div>
                 <div className="space-y-4">
@@ -818,9 +849,9 @@ export default function HeizungsplaketteMaske() {
                   <div>
                     <h3 className="text-lg font-semibold flex items-center">
                       <FileText className="mr-2 text-blue-600" />
-                      Energielabel
+                      Heizungslabel
                     </h3>
-                    <Label htmlFor="energielabel" className="font-semibold">Existiert ein Energielabel? *</Label>
+                    <Label htmlFor="energielabel" className="font-semibold">Existiert ein Heizungslabel? *</Label>
                     <RadioGroup name="energielabel" value={formData.energielabel} onValueChange={handleSelectChange('energielabel')}>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="Ja" id="energielabelJa" />
@@ -980,7 +1011,7 @@ export default function HeizungsplaketteMaske() {
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="heizungsanlageFotos" className="font-semibold">Fotos der Heizungsanlage</Label>
+                    <Label htmlFor="heizungsanlageFotos" className="font-semibold">Fotos der Heizungsanlage (max. 3)</Label>
                     <Input
                       id="heizungsanlageFotos"
                       name="heizungsanlageFotos"
@@ -988,6 +1019,7 @@ export default function HeizungsplaketteMaske() {
                       multiple
                       onChange={handleFileChange('heizungsanlageFotos')}
                       accept="image/*"
+                      max="3"
                     />
                     <div className="flex items-center mt-2">
                       <Checkbox
@@ -1002,7 +1034,7 @@ export default function HeizungsplaketteMaske() {
                     {errors.heizungsanlageFotos && <p className="text-red-500">{errors.heizungsanlageFotos}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="heizungsetiketteFotos" className="font-semibold">Fotos der Heizungsetikette</Label>
+                    <Label htmlFor="heizungsetiketteFotos" className="font-semibold">Fotos der Typenschildes (max. 3)</Label>
                     <Input
                       id="heizungsetiketteFotos"
                       name="heizungsetiketteFotos"
@@ -1010,6 +1042,7 @@ export default function HeizungsplaketteMaske() {
                       multiple
                       onChange={handleFileChange('heizungsetiketteFotos')}
                       accept="image/*"
+                      max="3"
                     />
                     <div className="flex items-center mt-2">
                       <Checkbox
@@ -1018,21 +1051,21 @@ export default function HeizungsplaketteMaske() {
                         onCheckedChange={handleCheckboxChange('verzichtAufHeizungsetiketteFotos')}
                       />
                       <Label htmlFor="verzichtAufHeizungsetiketteFotos" className="ml-2">
-                        Ich verzichte auf das Hochladen von Fotos der Heizungsetikette
+                        Ich verzichte auf das Hochladen von Fotos der Typenschildes 
                       </Label>
                     </div>
                     {errors.heizungsetiketteFotos && <p className="text-red-500">{errors.heizungsetiketteFotos}</p>}
                   </div>
                   {formData.energielabel === 'Ja' && (
                     <div>
-                      <Label htmlFor="heizungslabelFotos" className="font-semibold">Fotos des Heizungslabels</Label>
+                      <Label htmlFor="heizungslabelFotos" className="font-semibold">Foto des Heizungslabels (max. 1)</Label>
                       <Input
                         id="heizungslabelFotos"
                         name="heizungslabelFotos"
                         type="file"
-                        multiple
                         onChange={handleFileChange('heizungslabelFotos')}
                         accept="image/*"
+                        max="1"
                       />
                       <div className="flex items-center mt-2">
                         <Checkbox
@@ -1041,14 +1074,14 @@ export default function HeizungsplaketteMaske() {
                           onCheckedChange={handleCheckboxChange('verzichtAufHeizungslabelFotos')}
                         />
                         <Label htmlFor="verzichtAufHeizungslabelFotos" className="ml-2">
-                          Ich verzichte auf das Hochladen von Fotos des Heizungslabels
+                          Ich verzichte auf das Hochladen vom Foto zum Heizungslabel
                         </Label>
                       </div>
                       {errors.heizungslabelFotos && <p className="text-red-500">{errors.heizungslabelFotos}</p>}
                     </div>
                   )}
                   <div>
-                    <Label htmlFor="bedienungsanleitungFotos" className="font-semibold">Fotos der Bedienungsanleitung</Label>
+                    <Label htmlFor="bedienungsanleitungFotos" className="font-semibold">Fotos der Bedienungsanleitung (max. 3)</Label>
                     <Input
                       id="bedienungsanleitungFotos"
                       name="bedienungsanleitungFotos"
@@ -1056,6 +1089,7 @@ export default function HeizungsplaketteMaske() {
                       multiple
                       onChange={handleFileChange('bedienungsanleitungFotos')}
                       accept="image/*"
+                      max="3"
                     />
                     <div className="flex items-center mt-2">
                       <Checkbox
@@ -1081,10 +1115,16 @@ export default function HeizungsplaketteMaske() {
                 </h2>
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Überprüfen Sie Ihre Angaben:</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p><strong>Art der Immobilie:</strong> {formData.artDerImmobilie}</p>
+                      {formData.artDerImmobilie === 'Sonstige' && (
+                        <p><strong>Sonstige Art der Immobilie:</strong> {formData.artDerImmobilieSonstige}</p>
+                      )}
                       <p><strong>Heizungsart:</strong> {formData.heizungsart}</p>
+                      {formData.heizungsart === 'Sonstige' && (
+                        <p><strong>Sonstige Heizungsart:</strong> {formData.heizungsartSonstige}</p>
+                      )}
                       <p><strong>Alter der Heizung:</strong> {formData.alterDerHeizung}</p>
                       <p><strong>E-Mail:</strong> {formData.email}</p>
                     </div>
@@ -1095,29 +1135,43 @@ export default function HeizungsplaketteMaske() {
                     </div>
                   </div>
                   <div>
+                    <h4 className="font-semibold">Angaben zur Heizung:</h4>
                     <p><strong>Heizsystem:</strong> {formData.heizsystem}</p>
+                    {formData.heizsystem === 'Sonstige' && (
+                      <p><strong>Sonstiges Heizsystem:</strong> {formData.heizsystemSonstige}</p>
+                    )}
                     <p><strong>Heizungshersteller:</strong> {formData.heizungshersteller}</p>
                     <p><strong>Baujahr:</strong> {formData.baujahr}</p>
+                    <p><strong>Typenbezeichnung:</strong> {formData.typenbezeichnung || 'Unbekannt'}</p>
                     <p><strong>Heizungstechnik:</strong> {formData.heizungstechnik}</p>
+                    {formData.heizungstechnik === 'Sonstige' && (
+                      <p><strong>Sonstige Heizungstechnik:</strong> {formData.heizungstechnikSonstige}</p>
+                    )}
                     <p><strong>Energieträger:</strong> {formData.energietraeger}</p>
+                    {formData.energietraeger === 'Sonstige' && (
+                      <p><strong>Sonstiger Energieträger:</strong> {formData.energietraegerSonstige}</p>
+                    )}
                     <p><strong>Energielabel:</strong> {formData.energielabel}</p>
                     <p><strong>Energieausweis:</strong> {formData.energieausweis}</p>
+                    {formData.energieausweis === 'Ja' && (
+                      <p><strong>Datum des Energieausweises:</strong> {formData.energieausweisDate}</p>
+                    )}
                   </div>
                   <div>
-                    <p><strong>Persönliche Daten:</strong></p>
+                    <h4 className="font-semibold">Persönliche Daten:</h4>
                     <p>{formData.vorname} {formData.nachname}</p>
                     <p>{formData.personStrasse} {formData.personHausnummer}</p>
                     <p>{formData.personPostleitzahl} {formData.personOrt}</p>
                     <p><strong>Eigentümer:</strong> {formData.istEigentuemer}</p>
-                    <div>
-                      <p><strong>Hochgeladene Fotos:</strong></p>
-                      <p>Heizungsanlage: {formData.heizungsanlageFotos.length > 0 ? `${formData.heizungsanlageFotos.length} Foto(s)` : 'Keine'}</p>
-                      <p>Heizungsetikette: {formData.heizungsetiketteFotos.length > 0 ? `${formData.heizungsetiketteFotos.length} Foto(s)` : 'Keine'}</p>
-                      {formData.energielabel === 'Ja' && (
-                        <p>Heizungslabel: {formData.heizungslabelFotos.length > 0 ? `${formData.heizungslabelFotos.length} Foto(s)` : 'Keine'}</p>
-                      )}
-                      <p>Bedienungsanleitung: {formData.bedienungsanleitungFotos.length > 0 ? `${formData.bedienungsanleitungFotos.length} Foto(s)` : 'Keine'}</p>
-                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Hochgeladene Dokumente:</h4>
+                    <p>Heizungsanlage: {formData.heizungsanlageFotos.length > 0 ? `${formData.heizungsanlageFotos.length} Foto(s)` : (formData.verzichtAufHeizungsanlageFotos ? 'Hochladen verzichtet' : 'Keine')}</p>
+                    <p>Heizungsetikette: {formData.heizungsetiketteFotos.length > 0 ? `${formData.heizungsetiketteFotos.length} Foto(s)` : (formData.verzichtAufHeizungsetiketteFotos ? 'Hochladen verzichtet' : 'Keine')}</p>
+                    {formData.energielabel === 'Ja' && (
+                      <p>Heizungslabel: {formData.heizungslabelFotos.length > 0 ? `${formData.heizungslabelFotos.length} Foto(s)` : (formData.verzichtAufHeizungslabelFotos ? 'Hochladen verzichtet' : 'Keine')}</p>
+                    )}
+                    <p>Bedienungsanleitung: {formData.bedienungsanleitungFotos.length > 0 ? `${formData.bedienungsanleitungFotos.length} Foto(s)` : (formData.verzichtAufBedienungsanleitungFotos ? 'Hochladen verzichtet' : 'Keine')}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox

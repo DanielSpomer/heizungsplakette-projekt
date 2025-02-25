@@ -359,49 +359,29 @@ export default function HeizungsplaketteMaske() {
             bedienungsanleitungFotos: convertFilesToNames(dataToSend.bedienungsanleitungFotos),
           }
 
-          const response = await fetch('/api/heizungsplakette', {
-            method: 'POST',
+          const response = await fetch("/api/heizungsplakette", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             body: JSON.stringify(apiData),
-          });
-      
+          })
+
           if (response.ok) {
-            const result = await response.json();
-            console.log('Heizungsplakette-Daten erfolgreich gespeichert:', result);
-      
-            // Send email after successful data save
-            const emailResponse = await fetch('/api/send-email', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                ...apiData,
-                id: result.id, // Include the ID from the saved data
-              }),
-            });
-      
-            if (emailResponse.ok) {
-              const emailResult = await emailResponse.json();
-              console.log('E-Mail erfolgreich gesendet:', emailResult);
-              router.push(`/confirmation?id=${result.id}`);
-            } else {
-              console.error('Fehler beim Senden der E-Mail');
-              // Here you could display an error message to the user about email sending failure
-              // but still redirect them to the confirmation page
-              router.push(`/confirmation?id=${result.id}&emailError=true`);
-            }
+            const result = await response.json()
+            console.log("Heizungsplakette-Daten erfolgreich gespeichert:", result)
+            router.push(`/confirmation?id=${result.id}`)
           } else {
-            console.error('Fehler beim Speichern der Heizungsplakette-Daten');
+            console.error("Fehler beim Speichern der Heizungsplakette-Daten")
             // Here you could display an error message to the user
           }
         } catch (error) {
-          console.error('Fehler beim Speichern der Heizungsplakette-Daten oder Senden der E-Mail:', error);
+          console.error("Fehler beim Speichern der Heizungsplakette-Daten:", error)
           // Here you could display an error message to the user
         }
-      }}}
+      }
+    }
+  }
 
   const handleStepClick = (step: number) => {
     if (visitedSteps.includes(step) || step <= currentStep) {
@@ -610,6 +590,7 @@ export default function HeizungsplaketteMaske() {
             )}
 
             {currentStep === 3 && (
+              <div className="flex items-center justify-between">
               <fieldset>
                 <legend className="text-xl font-semibold mb-4 flex items-center">
                   <CreditCard className="mr-2 text-blue-600" aria-hidden="true" />
@@ -638,6 +619,7 @@ export default function HeizungsplaketteMaske() {
                   </p>
                 </div>
               </fieldset>
+              </div>
             )}
 
             {currentStep === 4 && (

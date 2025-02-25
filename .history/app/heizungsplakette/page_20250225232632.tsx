@@ -403,6 +403,7 @@ export default function HeizungsplaketteMaske() {
         }
       }}}
 
+
   const handleStepClick = (step: number) => {
     if (visitedSteps.includes(step) || step <= currentStep) {
       setCurrentStep(step)
