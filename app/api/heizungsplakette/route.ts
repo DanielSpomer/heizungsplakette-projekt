@@ -64,6 +64,7 @@ export async function POST(req: Request) {
       verzichtAufHeizungslabelFotos: Boolean(formData.verzichtAufHeizungslabelFotos),
       verzichtAufBedienungsanleitungFotos: Boolean(formData.verzichtAufBedienungsanleitungFotos),
       confirmAccuracy: Boolean(formData.confirmAccuracy),
+      herkunft: String(formData.herkunft),
     };
 
     const savedData = await prisma.heizungsplakette.create({

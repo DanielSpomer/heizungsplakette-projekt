@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       email: String(formData.email),
       artDerImmobilie: String(formData.artDerImmobilie),
       artDerImmobilieSonstige: formData.artDerImmobilieSonstige ? String(formData.artDerImmobilieSonstige) : null,
-      alterDerHeizung: String(formData.alterDerHeizung) ? String(formData.alterDerHeizung) : null,
+      alterDerHeizung: String(formData.alterDerHeizung),
       heizungsart: String(formData.heizungsart),
       heizungsartSonstige: formData.heizungsartSonstige ? String(formData.heizungsartSonstige) : null,
       strasse: String(formData.strasse),
@@ -64,6 +64,7 @@ export async function POST(req: Request) {
       verzichtAufHeizungslabelFotos: Boolean(formData.verzichtAufHeizungslabelFotos),
       verzichtAufBedienungsanleitungFotos: Boolean(formData.verzichtAufBedienungsanleitungFotos),
       confirmAccuracy: Boolean(formData.confirmAccuracy),
+      herkunft: String(formData.herkunft),
     };
 
     const savedData = await prisma.heizungsplakette.create({
