@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-/*import { Card, CardContent } from "@/components/ui/card"*/
+import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -93,6 +93,8 @@ export default function Page() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [pythonResponse, setPythonResponse] = useState<string | null>(null)
+  const [pythonTestLoading, setPythonTestLoading] = useState(false)
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -241,6 +243,28 @@ export default function Page() {
     }
   };
 
+  const handlePythonTest = async () => {
+    setPythonTestLoading(true);
+    setPythonResponse(null);
+    try {
+      const res = await fetch('/api/python_test?name=DashboardUser');
+      if (!res.ok) {
+        throw new Error(`Python script error: ${res.statusText}`);
+      }
+      const data = await res.json();
+      setPythonResponse(data.message);
+    } catch (error: any) {
+      console.error("Python test script error:", error);
+      setPythonResponse(`Error: ${error.message}`);
+      toast({
+        title: "Python Script Fehler",
+        description: error.message || "Konnte das Python-Skript nicht ausführen.",
+        variant: "destructive",
+      })
+    }
+    setPythonTestLoading(false);
+  };
+
   if (isLoading || !mounted) {
     return <LoadingSpinner />
   }
@@ -292,6 +316,21 @@ export default function Page() {
             <Label htmlFor="show-details" className="text-gray-700 dark:text-gray-200">Details anzeigen</Label>
           </div>
         </div>
+
+        <Card className="mb-6 dark:bg-gray-800 dark:border-gray-700">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-semibold mb-4 dark:text-gray-200">Python Script Test</h2>
+            <Button onClick={handlePythonTest} disabled={pythonTestLoading} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+              {pythonTestLoading ? 'Wird ausgeführt...' : 'Python Skript testen'}
+            </Button>
+            {pythonResponse && (
+              <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+                <p className="text-sm text-gray-700 dark:text-gray-200">Antwort vom Python Skript:</p>
+                <pre className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap">{pythonResponse}</pre>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="border rounded-md overflow-x-auto bg-white dark:bg-gray-800 shadow">
           <Table>
