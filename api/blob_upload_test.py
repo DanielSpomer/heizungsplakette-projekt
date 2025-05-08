@@ -4,7 +4,7 @@ import os
 import requests
 from datetime import datetime
 
-# --- Vercel Blob Upload Function (Simple Text Upload) --- #
+# --- Vercel Blob Upload Function (Adapted) --- #
 def upload_text_to_vercel_blob(text_content, filename):
     blob_rw_token = os.environ.get("BLOB_READ_WRITE_TOKEN")
     print(f"DEBUG: Using BLOB_READ_WRITE_TOKEN: {blob_rw_token[:20]}..." if blob_rw_token else "DEBUG: BLOB_READ_WRITE_TOKEN not found!")
@@ -14,22 +14,19 @@ def upload_text_to_vercel_blob(text_content, filename):
         parts = blob_rw_token.split('_')
         if len(parts) < 4 or parts[0] != 'vercel' or parts[1] != 'blob' or parts[2] != 'rw':
             raise ValueError("Invalid BLOB_READ_WRITE_TOKEN format.")
-        store_id_original = parts[3]
-        store_id = store_id_original.lower() # Force store ID to lowercase
-        print(f"DEBUG: Extracted Store ID (Original): {store_id_original}") 
-        print(f"DEBUG: Using Store ID (Lowercase): {store_id}")
+        store_id = parts[3] # Use the original extracted ID (mixed-case)
+        print(f"DEBUG: Using Extracted Store ID: {store_id}") # Log the ID being used
     except Exception as e:
         raise ValueError(f"Could not parse BLOB_READ_WRITE_TOKEN: {e}")
         
-    upload_url = f"https://{store_id}.blob.vercel-storage.com/{filename}"
+    upload_url = f"https://{store_id}.blob.vercel-storage.com/{filename}" # Use original store_id
     headers = {
         "Authorization": f"Bearer {blob_rw_token}",
         "x-api-version": "6", 
-        "x-content-type": "text/plain", # Set content type to text/plain
+        "x-content-type": "text/plain",
     }
     try:
-        print(f"Attempting to upload text to: {upload_url}")
-        # Encode the text content to bytes
+        print(f"Attempting to upload text to: {upload_url}") # Log the exact URL being used
         file_bytes = text_content.encode('utf-8')
         response = requests.put(upload_url, data=file_bytes, headers=headers)
         response.raise_for_status()
