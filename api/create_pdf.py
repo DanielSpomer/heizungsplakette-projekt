@@ -136,6 +136,8 @@ def fetch_heizungsplakette_data(item_id: str):
             conn.close()
 
 # --- Vercel Blob Upload Function --- #
+# This function will NOT be called by do_GET for PDF generation requests to this endpoint.
+# It can be kept if used by other parts of your system or removed if not.
 def upload_to_vercel_blob(pdf_bytes, filename):
     # Load .env file for local execution if needed (Blob token might be sensitive)
     # load_dotenv(find_dotenv())
@@ -270,8 +272,9 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
 
     pdf_buffer = BytesIO()
     writer.write(pdf_buffer)
-    pdf_buffer.seek(0)
-    return pdf_buffer.getvalue()
+    pdf_bytes = pdf_buffer.getvalue()
+    pdf_buffer.close()
+    return pdf_bytes
 
 # Optional: temporäre Bilder löschen (Not relevant for serverless if not writing temp files)
 # def cleanup_temp_images(): ...
@@ -281,73 +284,55 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urlparse(self.path)
         query_params = parse_qs(parsed_path.query)
-        
-        item_id = None
-        if 'id' in query_params:
-            item_id = query_params['id'][0]
-            
+        item_id = query_params.get('id', [None])[0]
+
         if not item_id:
             self.send_response(400)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"error": "Missing ID parameter"}).encode('utf-8'))
+            self.wfile.write(json.dumps({'error': 'Missing id parameter'}).encode('utf-8'))
             return
 
         try:
-            print(f"Fetching data for ID: {item_id}")
-            row_data = fetch_heizungsplakette_data(item_id)
-
-            if not row_data:
+            print(f"Fetching data for ID: {item_id}") # Server-side log
+            data = fetch_heizungsplakette_data(item_id)
+            if not data:
                 self.send_response(404)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": f"No data found for ID: {item_id}"}).encode('utf-8'))
+                self.wfile.write(json.dumps({'error': 'Data not found for id'}).encode('utf-8'))
                 return
+
+            print(f"Generating PDF for ID: {item_id}") # Server-side log
+            pdf_bytes = generate_pdf_in_memory(data)
             
-            print(f"Generating PDF for ID: {item_id}")
-            script_dir = os.path.dirname(__file__)
-            template_file_path = os.path.join(script_dir, "HeizungsplaketteFinal.pdf")
-            pdf_bytes = generate_pdf_in_memory(row_data, template_path=template_file_path)
-            
-            safe_nachname = str(row_data.get('nachname', 'N_A')).strip().replace(' ', '_')
-            safe_vorname = str(row_data.get('vorname', 'V_A')).strip().replace(' ', '_')
-            pdf_filename = f"Heizungsplaketten/Heizungsplakette_{safe_nachname}_{safe_vorname}_{item_id}.pdf"
+            print(f"PDF generated, sending {len(pdf_bytes)} bytes for ID: {item_id}") # Server-side log
 
-            print(f"Uploading PDF {pdf_filename} to Vercel Blob for ID: {item_id}")
-            blob_url = upload_to_vercel_blob(pdf_bytes, pdf_filename)
+            self.send_response(200)
+            self.send_header('Content-type', 'application/pdf')
+            self.send_header('Content-Disposition', f'attachment; filename="heizungsplakette_{item_id}.pdf"')
+            self.send_header('Access-Control-Allow-Origin', '*') # Add CORS header if frontend is on a different Vercel domain during preview
+            self.end_headers()
+            self.wfile.write(pdf_bytes)
 
-            if blob_url:
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({"message": "PDF created and uploaded successfully!", "url": blob_url}).encode('utf-8'))
-            else:
-                raise Exception("Failed to upload PDF to Vercel Blob, no URL returned.")
-
-        except FileNotFoundError as e:
-            print(f"ERROR: File not found - {str(e)}")
+        except FileNotFoundError as fnf_error:
+            print(f"ERROR in PDF generation (FileNotFound): {str(fnf_error)}")
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"error": f"Server configuration error: Missing required file - {str(e)}"}).encode('utf-8'))
-        except ConnectionError as e:
-            print(f"ERROR: Database Connection - {str(e)}")
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": f"Database connection error: {str(e)}"}).encode('utf-8'))
-        except ValueError as e: # For BLOB_READ_WRITE_TOKEN parsing or invalid ID
-            print(f"ERROR: Value Error - {str(e)}")
-            self.send_response(400)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+            error_response = {'error': f'Server error: Missing required file for PDF generation - {str(fnf_error)}'}
+            self.wfile.write(json.dumps(error_response).encode('utf-8'))
         except Exception as e:
-            print(f"ERROR: General Exception - {str(e)}") # Log the actual error for debugging
+            print(f"ERROR in PDF generation for ID {item_id}: {str(e)}")
+            # Consider logging the full traceback here for better debugging
+            # import traceback
+            # print(traceback.format_exc())
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({"error": f"An unexpected error occurred: {str(e)}"}).encode('utf-8'))
+            # Be cautious about sending detailed internal errors to the client
+            error_response = {'error': f'Failed to generate PDF: {str(e)}'} # Keep error message somewhat generic for client
+            self.wfile.write(json.dumps(error_response).encode('utf-8'))
         return
 
 # --- Command-Line Execution Block --- #

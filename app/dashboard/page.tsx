@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { upload } from '@vercel/blob/client'
 
 type HeizungsplaketteItem = {
   id: number;
@@ -258,43 +259,64 @@ export default function Page() {
     setPdfGeneratingItemId(itemId);
     try {
       const apiUrl = `/api/create_pdf?id=${itemId.toString()}`;
-      
       const response = await fetch(apiUrl);
 
       if (!response.ok) {
-        let errorBody = `HTTP error ${response.status}: ${response.statusText}`;
+        let errorBody = `HTTP error ${response.status} (${response.statusText}) while fetching PDF from Python backend.`;
         try {
-          const text = await response.text(); 
-          errorBody = text || errorBody;
-        } catch (textError) {
+          // Try to get more specific error from the Python script if it sent JSON
+          const errorJson = await response.json(); 
+          if (errorJson && errorJson.error) {
+            errorBody = `PDF Generation Error (from Python): ${errorJson.error}`;
+          } else {
+            // Fallback if error response wasn't JSON or didn't have .error
+             const text = await response.text(); 
+             errorBody = text || errorBody; 
+          }
+        } catch (parseError) { 
+            // If parsing the error response fails, stick to the original errorBody
+            console.warn("Could not parse error response from /api/create_pdf", parseError);
+            // Try to get raw text if JSON parsing failed
+            try { 
+                const text = await response.text();
+                errorBody = text || errorBody;
+            } catch (textErr) {/* ignore */}
         }
-        throw new Error(errorBody);
+        throw new Error(`${errorBody}`);
       }
 
-      const data = await response.json();
+      const pdfBlob = await response.blob(); // Get the PDF data as a Blob
+      // Ensure the filename doesn't have problematic characters for a URL path or blob storage
+      const safeTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `heizungsplakette-${itemId}-${safeTimestamp}.pdf`;
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      if (data.message) {
-        toast({
-          title: "API Erreicht / PDF Generiert",
-          description: data.message,
-        });
-      } else {
-        throw new Error(data.error || "Unerwartete Antwort vom Server.");
-      }
+      // Now upload this PDF file to Vercel Blob using the Next.js handler
+      const newBlobResult = await upload(pdfFile.name, pdfFile, {
+        access: 'public',
+        handleUploadUrl: '/api/blob-upload', // Our existing Next.js blob upload handler
+      });
+
+      toast({
+        title: "PDF Generiert & Hochgeladen",
+        description: `PDF erfolgreich erstellt und zu Vercel Blob hochgeladen: ${newBlobResult.url}`,
+      });
+      // Optionally, you might want to store or display newBlobResult.url
+      // e.g., update the heizungsplaketten state if you add a pdfUrl field to your data model
 
     } catch (error: unknown) {
-      let errorMessage = "Fehler bei der PDF-Generierung.";
+      let errorMessage = "Fehler bei der PDF-Generierung oder dem Upload.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      console.error("PDF Generation Error:", error); 
+      console.error("PDF Generation/Upload Error:", error);
       toast({
-        title: "Fehler bei PDF-Generierung",
+        title: "Fehler",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      setPdfGeneratingItemId(null);
+      setPdfGeneratingItemId(null); // Reset UI feedback
     }
   };
 
@@ -302,18 +324,25 @@ export default function Page() {
     setBlobTestLoading(true);
     setBlobTestResult(null);
     try {
-      const response = await fetch('/api/blob_upload_test');
-      const data = await response.json();
+      const now = new Date().toISOString();
+      const fileContent = `Hello from Dashboard Blob Test! Timestamp: ${now}`;
+      // Ensure the filename doesn't have problematic characters for a URL path
+      const safeTimestamp = now.replace(/[:.]/g, '-');
+      const fileName = `dashboard-blob-test-${safeTimestamp}.txt`;
+      const file = new File([fileContent], fileName, { type: 'text/plain' });
 
-      if (response.ok && data.url) {
-        toast({
-          title: "Blob Upload Erfolg",
-          description: `Datei erfolgreich hochgeladen: ${data.url}`,
-        });
-        setBlobTestResult(data.url);
-      } else {
-        throw new Error(data.error || "Unbekannter Fehler beim Blob Upload Test.");
-      }
+      // Use the Vercel Blob client upload function
+      const newBlob = await upload(file.name, file, {
+        access: 'public', // Files will be publicly accessible
+        handleUploadUrl: '/api/blob-upload', // The new generic API route
+      });
+
+      toast({
+        title: "Blob Upload Erfolg",
+        description: `Datei erfolgreich hochgeladen: ${newBlob.url}`,
+      });
+      setBlobTestResult(newBlob.url);
+
     } catch (error: unknown) {
       let errorMessage = "Fehler beim Blob Upload Test.";
       if (error instanceof Error) {
