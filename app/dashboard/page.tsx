@@ -94,6 +94,8 @@ export default function Page() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [pdfGeneratingItemId, setPdfGeneratingItemId] = useState<number | null>(null);
+  const [blobTestLoading, setBlobTestLoading] = useState(false);
+  const [blobTestResult, setBlobTestResult] = useState<string | null>(null);
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -243,38 +245,30 @@ export default function Page() {
   };
 
   const handleGeneratePdf = async (itemId: number) => {
-    console.log("[handleGeneratePdf] Attempting for ID:", itemId);
     setPdfGeneratingItemId(itemId);
     try {
       const apiUrl = `/api/create_pdf?id=${itemId.toString()}`;
-      console.log("[handleGeneratePdf] Fetching URL:", apiUrl);
       
       const response = await fetch(apiUrl);
-      console.log("[handleGeneratePdf] Fetch response Status:", response.status, "OK:", response.ok);
 
       if (!response.ok) {
         let errorBody = `HTTP error ${response.status}: ${response.statusText}`;
         try {
           const text = await response.text(); 
-          console.log("[handleGeneratePdf] Non-OK response body:", text);
           errorBody = text || errorBody;
         } catch (textError) {
-          console.error("[handleGeneratePdf] Could not read error response body:", textError);
         }
         throw new Error(errorBody);
       }
 
       const data = await response.json();
-      console.log("[handleGeneratePdf] Parsed JSON data:", data);
 
       if (data.message) {
-        console.log("[handleGeneratePdf] Success toast with message:", data.message);
         toast({
-          title: "API Erreicht",
+          title: "API Erreicht / PDF Generiert",
           description: data.message,
         });
       } else {
-        console.log("[handleGeneratePdf] Unexpected response format:", data);
         throw new Error(data.error || "Unerwartete Antwort vom Server.");
       }
 
@@ -283,15 +277,47 @@ export default function Page() {
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      console.error("[handleGeneratePdf] Error caught:", errorMessage, error); 
+      console.error("PDF Generation Error:", error); 
       toast({
         title: "Fehler bei PDF-Generierung",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      console.log("[handleGeneratePdf] Resetting state for ID:", itemId);
       setPdfGeneratingItemId(null);
+    }
+  };
+
+  const handleBlobUploadTest = async () => {
+    setBlobTestLoading(true);
+    setBlobTestResult(null);
+    try {
+      const response = await fetch('/api/blob_upload_test');
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        toast({
+          title: "Blob Upload Erfolg",
+          description: `Datei erfolgreich hochgeladen: ${data.url}`,
+        });
+        setBlobTestResult(data.url);
+      } else {
+        throw new Error(data.error || "Unbekannter Fehler beim Blob Upload Test.");
+      }
+    } catch (error: unknown) {
+      let errorMessage = "Fehler beim Blob Upload Test.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.error("Blob Upload Test Error:", error);
+      setBlobTestResult(`Error: ${errorMessage}`);
+      toast({
+        title: "Fehler beim Blob Upload Test",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setBlobTestLoading(false);
     }
   };
 
@@ -345,6 +371,26 @@ export default function Page() {
             />
             <Label htmlFor="show-details" className="text-gray-700 dark:text-gray-200">Details anzeigen</Label>
           </div>
+        </div>
+
+        <div className="mb-6 p-6 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow">
+          <h2 className="text-xl font-semibold mb-4 dark:text-gray-200">Vercel Blob Upload Test</h2>
+          <Button onClick={handleBlobUploadTest} disabled={blobTestLoading} className="dark:bg-green-600 dark:hover:bg-green-700 dark:text-white">
+            {blobTestLoading ? 'Lädt hoch...' : 'Testdatei hochladen'}
+          </Button>
+          {blobTestResult && (
+            <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+              <p className="text-sm text-gray-700 dark:text-gray-200">Ergebnis:</p>
+              <a 
+                href={blobTestResult.startsWith('Error:') ? '#' : blobTestResult} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className={`text-sm whitespace-pre-wrap ${blobTestResult.startsWith('Error:') ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400 underline'}`}
+              >
+                {blobTestResult}
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="border rounded-md overflow-x-auto bg-white dark:bg-gray-800 shadow">
