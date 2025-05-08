@@ -2,13 +2,12 @@ from http.server import BaseHTTPRequestHandler
 import json
 import os
 import requests
-from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
-# --- Vercel Blob Upload Function (Adapted) --- #
-def upload_to_vercel_blob(file_bytes, filename):
+# --- Vercel Blob Upload Function (Simple Text Upload) --- #
+def upload_text_to_vercel_blob(text_content, filename):
     blob_rw_token = os.environ.get("BLOB_READ_WRITE_TOKEN")
-    print(f"DEBUG: Using BLOB_READ_WRITE_TOKEN: {blob_rw_token[:20]}..." if blob_rw_token else "DEBUG: BLOB_READ_WRITE_TOKEN not found!") # Log partial token
+    print(f"DEBUG: Using BLOB_READ_WRITE_TOKEN: {blob_rw_token[:20]}..." if blob_rw_token else "DEBUG: BLOB_READ_WRITE_TOKEN not found!")
     if not blob_rw_token:
         raise ValueError("BLOB_READ_WRITE_TOKEN environment variable not set.")
     try:
@@ -18,25 +17,27 @@ def upload_to_vercel_blob(file_bytes, filename):
         store_id_original = parts[3]
         store_id = store_id_original.lower() # Force store ID to lowercase
         print(f"DEBUG: Extracted Store ID (Original): {store_id_original}") 
-        print(f"DEBUG: Using Store ID (Lowercase): {store_id}") # Log lowercase store ID being used
+        print(f"DEBUG: Using Store ID (Lowercase): {store_id}")
     except Exception as e:
         raise ValueError(f"Could not parse BLOB_READ_WRITE_TOKEN: {e}")
         
-    upload_url = f"https://{store_id}.blob.vercel-storage.com/{filename}" # Use lowercase store_id
+    upload_url = f"https://{store_id}.blob.vercel-storage.com/{filename}"
     headers = {
         "Authorization": f"Bearer {blob_rw_token}",
         "x-api-version": "6", 
-        "x-content-type": "text/plain", # Content type for simple text file
+        "x-content-type": "text/plain", # Set content type to text/plain
     }
     try:
-        print(f"Attempting to upload to: {upload_url}")
+        print(f"Attempting to upload text to: {upload_url}")
+        # Encode the text content to bytes
+        file_bytes = text_content.encode('utf-8')
         response = requests.put(upload_url, data=file_bytes, headers=headers)
         response.raise_for_status()
         blob_data = response.json()
-        print(f"Upload successful: {blob_data}")
+        print(f"Text upload successful: {blob_data}")
         return blob_data.get("url")
     except requests.exceptions.RequestException as e:
-        print(f"Error uploading to Vercel Blob: {e}")
+        print(f"Error uploading text to Vercel Blob: {e}")
         if hasattr(e, 'response') and e.response is not None:
             print(f"Blob API Response Status: {e.response.status_code}")
             print(f"Blob API Response Body: {e.response.text}")
@@ -49,30 +50,29 @@ class handler(BaseHTTPRequestHandler):
             # 1. Create simple file content
             now = datetime.now().isoformat()
             file_content = f"Hello from Blob Test! Timestamp: {now}"
-            file_bytes = file_content.encode('utf-8')
             
             # 2. Define filename in the desired path
-            filename = f"test/blob_test_{now.replace(':', '-').replace('.', '-')}.txt"
+            filename = f"test/simple_blob_test_{now.replace(':', '-').replace('.', '-')}.txt"
             
             # 3. Upload to Blob
             print(f"Uploading test file: {filename}")
-            blob_url = upload_to_vercel_blob(file_bytes, filename)
+            blob_url = upload_text_to_vercel_blob(file_content, filename)
             
             # 4. Return success response
             if blob_url:
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
-                response_data = {'message': 'Test file uploaded successfully!', 'url': blob_url}
+                response_data = {'message': 'Simple test file uploaded successfully!', 'url': blob_url}
                 self.wfile.write(json.dumps(response_data).encode('utf-8'))
             else:
-                 raise Exception("Blob upload failed, no URL returned.")
+                 raise Exception("Simple blob upload failed, no URL returned.")
                  
         except Exception as e:
-            print(f"ERROR in blob_upload_test: {str(e)}")
+            print(f"ERROR in simple_blob_upload_test: {str(e)}")
             self.send_response(500)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            error_response = {'error': f'Failed to upload test file: {str(e)}'}
+            error_response = {'error': f'Failed to upload simple test file: {str(e)}'}
             self.wfile.write(json.dumps(error_response).encode('utf-8'))
         return 
