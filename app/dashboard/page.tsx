@@ -243,22 +243,38 @@ export default function Page() {
   };
 
   const handleGeneratePdf = async (itemId: number) => {
+    console.log("[handleGeneratePdf] Attempting for ID:", itemId);
     setPdfGeneratingItemId(itemId);
     try {
-      const response = await fetch(`/api/create_pdf?id=${itemId.toString()}`);
+      const apiUrl = `/api/create_pdf?id=${itemId.toString()}`;
+      console.log("[handleGeneratePdf] Fetching URL:", apiUrl);
+      
+      const response = await fetch(apiUrl);
+      console.log("[handleGeneratePdf] Fetch response Status:", response.status, "OK:", response.ok);
 
       if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+        let errorBody = `HTTP error ${response.status}: ${response.statusText}`;
+        try {
+          const text = await response.text(); 
+          console.log("[handleGeneratePdf] Non-OK response body:", text);
+          errorBody = text || errorBody;
+        } catch (textError) {
+          console.error("[handleGeneratePdf] Could not read error response body:", textError);
+        }
+        throw new Error(errorBody);
       }
 
       const data = await response.json();
+      console.log("[handleGeneratePdf] Parsed JSON data:", data);
 
       if (data.message) {
+        console.log("[handleGeneratePdf] Success toast with message:", data.message);
         toast({
           title: "API Erreicht",
           description: data.message,
         });
       } else {
+        console.log("[handleGeneratePdf] Unexpected response format:", data);
         throw new Error(data.error || "Unerwartete Antwort vom Server.");
       }
 
@@ -267,13 +283,14 @@ export default function Page() {
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      console.error("PDF Generation Error:", error);
+      console.error("[handleGeneratePdf] Error caught:", errorMessage, error); 
       toast({
         title: "Fehler bei PDF-Generierung",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
+      console.log("[handleGeneratePdf] Resetting state for ID:", itemId);
       setPdfGeneratingItemId(null);
     }
   };
