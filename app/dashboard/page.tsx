@@ -1,6 +1,8 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
+import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, MoreHorizontal, Edit, Eye, Check, X } from 'lucide-react'
+import { Search, MoreHorizontal, Edit, Eye, Check, X, Sun, Moon } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -89,6 +91,8 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -109,36 +113,17 @@ export default function Page() {
   }, [toast])
 
   useEffect(() => {
-    // const verifyTokenAndFetchData = async () => {
-    //   try {
-    //     const response = await fetch('/api/auth/verify')
-    //     const data = await response.json()
-
-    //     console.log('Auth verification response:', data)
-
-    //     if (!data.isAuthenticated) {
-    //       console.log('Not authenticated, redirecting to login')
-    //       router.push('/login')
-    //     } else {
-    //       console.log('Authenticated, fetching data')
-    //       await fetchHeizungsplaketten()
-    //     }
-    //   } catch (error) {
-    //     console.error('Auth verification failed:', error)
-    //     router.push('/login')
-    //   } finally {
-    //     setIsLoading(false)
-    //   }
-    // }
-
-    // verifyTokenAndFetchData()
     const fetchData = async () => {
       setIsLoading(true);
       await fetchHeizungsplaketten();
       setIsLoading(false);
     }
     fetchData();
-  }, [router, fetchHeizungsplaketten])
+  }, [fetchHeizungsplaketten])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -256,411 +241,426 @@ export default function Page() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !mounted) {
     return <LoadingSpinner />
   }
 
+  const currentLogo = theme === 'dark' ? '/images/heizungsplakette-logo-hell.png' : '/images/heizungsplakette-logo.png';
+
   return (
-    <div className="container mx-auto py-6">
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <>
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Heizungsplaketten Dashboard</h1>
-            <Button onClick={handleLogout}>Abmelden</Button>
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      <div className="w-52 bg-white dark:bg-gray-800 p-4 flex flex-col justify-between items-center shadow-lg">
+        <div>
+          <div className="mb-6">
+            <Image src={currentLogo} alt="Heizungsplakette Logo" width={220} height={55} className="mb-4" />
+            <p className="text-sm text-gray-700 dark:text-gray-200 mt-8 ml-4">Dashboard</p>
           </div>
+        </div>
+        <div className="flex items-center justify-start">
+          <Button onClick={handleLogout} variant="outline" className="px-6 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+            Abmelden
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="rounded-full p-2 flex items-center justify-center dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 ml-2"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Moon className="h-7 w-7" /> : <Sun className="h-7 w-7" />}
+          </Button>
+        </div>
+      </div>
 
-          <Card className="mb-6">
-            <CardContent className="p-6 flex justify-between items-center">
-              <div className="relative w-64">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                <Input
-                  type="search"
-                  placeholder="Suche..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-details"
-                  checked={showDetails}
-                  onCheckedChange={setShowDetails}
-                />
-                <Label htmlFor="show-details">Details anzeigen</Label>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div className="relative w-64">
+            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+            <Input
+              type="search"
+              placeholder="Suche..."
+              className="pl-8 bg-white dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="show-details"
+              checked={showDetails}
+              onCheckedChange={setShowDetails}
+            />
+            <Label htmlFor="show-details" className="text-gray-700 dark:text-gray-200">Details anzeigen</Label>
+          </div>
+        </div>
 
-          <div className="border rounded-md overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Art der Immobilie</TableHead>
-                  <TableHead>Heizungsart</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>E-Mail</TableHead>
+        <div className="border rounded-md overflow-x-auto bg-white dark:bg-gray-800 shadow">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="dark:text-gray-300">Art der Immobilie</TableHead>
+                <TableHead className="dark:text-gray-300">Heizungsart</TableHead>
+                <TableHead className="dark:text-gray-300">Status</TableHead>
+                <TableHead className="dark:text-gray-300">E-Mail</TableHead>
+                {showDetails && (
+                  <>
+                    <TableHead className="dark:text-gray-300">Vorname</TableHead>
+                    <TableHead className="dark:text-gray-300">Nachname</TableHead>
+                    <TableHead className="dark:text-gray-300">Straße</TableHead>
+                    <TableHead className="dark:text-gray-300">Hausnummer</TableHead>
+                    <TableHead className="dark:text-gray-300">PLZ</TableHead>
+                    <TableHead className="dark:text-gray-300">Ort</TableHead>
+                    <TableHead className="dark:text-gray-300">Heizungshersteller</TableHead>
+                    <TableHead className="dark:text-gray-300">Baujahr</TableHead>
+                    <TableHead className="dark:text-gray-300">Heizsystem</TableHead>
+                    <TableHead className="dark:text-gray-300">Heizungstechnik</TableHead>
+                    <TableHead className="dark:text-gray-300">Energieträger</TableHead>
+                  </>
+                )}
+                <TableHead className="dark:text-gray-300">Aktionen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredHeizungsplaketten.map((item) => (
+                <TableRow key={item.id} className="dark:border-gray-700">
+                  <TableCell className="dark:text-gray-300">{item.artDerImmobilie}</TableCell>
+                  <TableCell className="dark:text-gray-300">{item.heizungsart}</TableCell>
+                  <TableCell>
+                    <Badge className={`${getStatusColor(item.status)} dark:text-opacity-90`}>{item.status}</Badge>
+                  </TableCell>
+                  <TableCell className="dark:text-gray-300">{item.email}</TableCell>
                   {showDetails && (
                     <>
-                      <TableHead>Vorname</TableHead>
-                      <TableHead>Nachname</TableHead>
-                      <TableHead>Straße</TableHead>
-                      <TableHead>Hausnummer</TableHead>
-                      <TableHead>PLZ</TableHead>
-                      <TableHead>Ort</TableHead>
-                      <TableHead>Heizungshersteller</TableHead>
-                      <TableHead>Baujahr</TableHead>
-                      <TableHead>Heizsystem</TableHead>
-                      <TableHead>Heizungstechnik</TableHead>
-                      <TableHead>Energieträger</TableHead>
+                      <TableCell className="dark:text-gray-300">{item.vorname}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.nachname}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.strasse}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.hausnummer}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.postleitzahl}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.ort}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.heizungshersteller}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.baujahr}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.heizsystem}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.heizungstechnik}</TableCell>
+                      <TableCell className="dark:text-gray-300">{item.energietraeger}</TableCell>
                     </>
                   )}
-                  <TableHead>Aktionen</TableHead>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0 dark:text-gray-300 dark:hover:bg-gray-700">
+                          <span className="sr-only">Menü öffnen</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
+                        <DropdownMenuItem onClick={() => handleEdit(item)} className="dark:text-gray-300 dark:hover:bg-gray-700">
+                          <Edit className="mr-2 h-4 w-4" />
+                          Bearbeiten
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleWatch(item)} className="dark:text-gray-300 dark:hover:bg-gray-700">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Beobachten
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isLoading || item.status === 'Genehmigt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
+                          <Check className="mr-2 h-4 w-4" />
+                          Genehmigen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleReject(item.id)} disabled={isLoading || item.status === 'Abgelehnt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
+                          <X className="mr-2 h-4 w-4" />
+                          Ablehnen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHeizungsplaketten.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.artDerImmobilie}</TableCell>
-                    <TableCell>{item.heizungsart}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
-                    </TableCell>
-                    <TableCell>{item.email}</TableCell>
-                    {showDetails && (
-                      <>
-                        <TableCell>{item.vorname}</TableCell>
-                        <TableCell>{item.nachname}</TableCell>
-                        <TableCell>{item.strasse}</TableCell>
-                        <TableCell>{item.hausnummer}</TableCell>
-                        <TableCell>{item.postleitzahl}</TableCell>
-                        <TableCell>{item.ort}</TableCell>
-                        <TableCell>{item.heizungshersteller}</TableCell>
-                        <TableCell>{item.baujahr}</TableCell>
-                        <TableCell>{item.heizsystem}</TableCell>
-                        <TableCell>{item.heizungstechnik}</TableCell>
-                        <TableCell>{item.energietraeger}</TableCell>
-                      </>
-                    )}
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Menü öffnen</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(item)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Bearbeiten
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleWatch(item)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Beobachten
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isLoading || item.status === 'Genehmigt'}>
-                            <Check className="mr-2 h-4 w-4" />
-                            Genehmigen
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleReject(item.id)} disabled={isLoading || item.status === 'Abgelehnt'}>
-                            <X className="mr-2 h-4 w-4" />
-                            Ablehnen
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
-          <Dialog open={editingItem !== null} onOpenChange={(open) => !open && setEditingItem(null)}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Heizungsplakette bearbeiten</DialogTitle>
-              </DialogHeader>
-              {editingItem && (
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="artDerImmobilie">Art der Immobilie</Label>
-                      <Select
-                        value={editingItem.artDerImmobilie}
-                        onValueChange={(value) => setEditingItem({...editingItem, artDerImmobilie: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wählen Sie die Art der Immobilie" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Einfamilienhaus">Einfamilienhaus</SelectItem>
-                          <SelectItem value="Mehrfamilienhaus">Mehrfamilienhaus</SelectItem>
-                          <SelectItem value="Doppelhaushälfte">Doppelhaushälfte</SelectItem>
-                          <SelectItem value="Reihenhaus">Reihenhaus</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="heizungsart">Heizungsart</Label>
-                      <Select
-                        value={editingItem.heizungsart}
-                        onValueChange={(value) => setEditingItem({...editingItem, heizungsart: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wählen Sie die Heizungsart" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Gasheizung">Gasheizung</SelectItem>
-                          <SelectItem value="Öl Heizung">Öl Heizung</SelectItem>
-                          <SelectItem value="Wärmepumpe">Wärmepumpe</SelectItem>
-                          <SelectItem value="Fernwärme">Fernwärme</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="email">E-Mail</Label>
-                      <Input
-                        id="email"
-                        value={editingItem.email}
-                        onChange={(e) => setEditingItem({...editingItem, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="vorname">Vorname</Label>
-                      <Input
-                        id="vorname"
-                        value={editingItem.vorname}
-                        onChange={(e) => setEditingItem({...editingItem, vorname: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="nachname">Nachname</Label>
-                      <Input
-                        id="nachname"
-                        value={editingItem.nachname}
-                        onChange={(e) => setEditingItem({...editingItem, nachname: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="strasse">Straße</Label>
-                      <Input
-                        id="strasse"
-                        value={editingItem.strasse}
-                        onChange={(e) => setEditingItem({...editingItem, strasse: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="hausnummer">Hausnummer</Label>
-                      <Input
-                        id="hausnummer"
-                        value={editingItem.hausnummer}
-                        onChange={(e) => setEditingItem({...editingItem, hausnummer: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="postleitzahl">PLZ</Label>
-                      <Input
-                        id="postleitzahl"
-                        value={editingItem.postleitzahl}
-                        onChange={(e) => setEditingItem({...editingItem, postleitzahl: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="ort">Ort</Label>
-                      <Input
-                        id="ort"
-                        value={editingItem.ort}
-                        onChange={(e) => setEditingItem({...editingItem, ort: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="heizungshersteller">Heizungshersteller</Label>
-                      <Input
-                        id="heizungshersteller"
-                        value={editingItem.heizungshersteller}
-                        onChange={(e) => setEditingItem({...editingItem, heizungshersteller: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="baujahr">Baujahr</Label>
-                      <Input
-                        id="baujahr"
-                        type="number"
-                        value={editingItem.baujahr}
-                        onChange={(e) => setEditingItem({...editingItem, baujahr: parseInt(e.target.value)})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="heizsystem">Heizsystem</Label>
-                      <Input
-                        id="heizsystem"
-                        value={editingItem.heizsystem}
-                        onChange={(e) => setEditingItem({...editingItem, heizsystem: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="heizungstechnik">Heizungstechnik</Label>
-                      <Input
-                        id="heizungstechnik"
-                        value={editingItem.heizungstechnik}
-                        onChange={(e) => setEditingItem({...editingItem, heizungstechnik: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="energietraeger">Energieträger</Label>
-                      <Input
-                        id="energietraeger"
-                        value={editingItem.energietraeger}
-                        onChange={(e) => setEditingItem({...editingItem, energietraeger: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="typenbezeichnung">Typenbezeichnung</Label>
-                      <Input
-                        id="typenbezeichnung"
-                        value={editingItem.typenbezeichnung}
-                        onChange={(e) => setEditingItem({...editingItem, typenbezeichnung: e.target.value})}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="typenbezeichnungUnbekannt"
-                        checked={editingItem.typenbezeichnungUnbekannt}
-                        onCheckedChange={(checked) => setEditingItem({...editingItem, typenbezeichnungUnbekannt: checked as boolean})}
-                      />
-                      <Label htmlFor="typenbezeichnungUnbekannt">Typenbezeichnung unbekannt</Label>
-                    </div>
-                    <div>
-                      <Label htmlFor="energieausweis">Energieausweis</Label>
-                      <Input
-                        id="energieausweis"
-                        value={editingItem.energieausweis}
-                        onChange={(e) => setEditingItem({...editingItem, energieausweis: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="energieausweisDate">Energieausweis Datum</Label>
-                      <Input
-                        id="energieausweisDate"
-                        type="date"
-                        value={editingItem.energieausweisDate}
-                        onChange={(e) => setEditingItem({...editingItem, energieausweisDate: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="istEigentuemer">Ist Eigentümer</Label>
-                      <Select
-                        value={editingItem.istEigentuemer}
-                        onValueChange={(value) => setEditingItem({...editingItem, istEigentuemer: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wählen Sie den Eigentümerstatus" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ja">Ja</SelectItem>
-                          <SelectItem value="Nein">Nein</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+        <Dialog open={editingItem !== null} onOpenChange={(open) => !open && setEditingItem(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
+            <DialogHeader>
+              <DialogTitle className="dark:text-gray-200">Heizungsplakette bearbeiten</DialogTitle>
+            </DialogHeader>
+            {editingItem && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="artDerImmobilie" className="dark:text-gray-300">Art der Immobilie</Label>
+                    <Select
+                      value={editingItem.artDerImmobilie}
+                      onValueChange={(value) => setEditingItem({...editingItem, artDerImmobilie: value})}
+                    >
+                      <SelectTrigger className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+                        <SelectValue placeholder="Wählen Sie die Art der Immobilie" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
+                        <SelectItem value="Einfamilienhaus" className="dark:hover:bg-gray-700">Einfamilienhaus</SelectItem>
+                        <SelectItem value="Mehrfamilienhaus" className="dark:hover:bg-gray-700">Mehrfamilienhaus</SelectItem>
+                        <SelectItem value="Doppelhaushälfte" className="dark:hover:bg-gray-700">Doppelhaushälfte</SelectItem>
+                        <SelectItem value="Reihenhaus" className="dark:hover:bg-gray-700">Reihenhaus</SelectItem>
+                        <SelectItem value="Sonstige" className="dark:hover:bg-gray-700">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="datenschutzUndNutzungsbedingungen"
-                        checked={editingItem.datenschutzUndNutzungsbedingungen}
-                        onCheckedChange={(checked) => setEditingItem({...editingItem, datenschutzUndNutzungsbedingungen: checked as boolean})}
-                      />
-                      <Label htmlFor="datenschutzUndNutzungsbedingungen">Datenschutz und Nutzungsbedingungen</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="einwilligungDatenverarbeitung"
-                        checked={editingItem.einwilligungDatenverarbeitung}
-                        onCheckedChange={(checked) => setEditingItem({...editingItem, einwilligungDatenverarbeitung: checked as boolean})}
-                      />
-                      <Label htmlFor="einwilligungDatenverarbeitung">Einwilligung Datenverarbeitung</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="aufforderungSofortigeTaetigkeit"
-                        checked={editingItem.aufforderungSofortigeTaetigkeit}
-                        onCheckedChange={(checked) => setEditingItem({...editingItem, aufforderungSofortigeTaetigkeit: checked as boolean})}
-                      />
-                      <Label htmlFor="aufforderungSofortigeTaetigkeit">Aufforderung sofortige Tätigkeit</Label>
-                    </div>
+                  <div>
+                    <Label htmlFor="heizungsart" className="dark:text-gray-300">Heizungsart</Label>
+                    <Select
+                      value={editingItem.heizungsart}
+                      onValueChange={(value) => setEditingItem({...editingItem, heizungsart: value})}
+                    >
+                      <SelectTrigger className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+                        <SelectValue placeholder="Wählen Sie die Heizungsart" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:text-gray-200">
+                        <SelectItem value="Gasheizung" className="dark:hover:bg-gray-700">Gasheizung</SelectItem>
+                        <SelectItem value="Öl Heizung" className="dark:hover:bg-gray-700">Öl Heizung</SelectItem>
+                        <SelectItem value="Wärmepumpe" className="dark:hover:bg-gray-700">Wärmepumpe</SelectItem>
+                        <SelectItem value="Fernwärme" className="dark:hover:bg-gray-700">Fernwärme</SelectItem>
+                        <SelectItem value="Sonstige" className="dark:hover:bg-gray-700">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="dark:text-gray-300">E-Mail</Label>
+                    <Input
+                      id="email"
+                      value={editingItem.email}
+                      onChange={(e) => setEditingItem({...editingItem, email: e.target.value})}
+                      className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="vorname" className="dark:text-gray-300">Vorname</Label>
+                    <Input
+                      id="vorname"
+                      value={editingItem.vorname}
+                      onChange={(e) => setEditingItem({...editingItem, vorname: e.target.value})}
+                      className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nachname">Nachname</Label>
+                    <Input
+                      id="nachname"
+                      value={editingItem.nachname}
+                      onChange={(e) => setEditingItem({...editingItem, nachname: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="strasse">Straße</Label>
+                    <Input
+                      id="strasse"
+                      value={editingItem.strasse}
+                      onChange={(e) => setEditingItem({...editingItem, strasse: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="hausnummer">Hausnummer</Label>
+                    <Input
+                      id="hausnummer"
+                      value={editingItem.hausnummer}
+                      onChange={(e) => setEditingItem({...editingItem, hausnummer: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="postleitzahl">PLZ</Label>
+                    <Input
+                      id="postleitzahl"
+                      value={editingItem.postleitzahl}
+                      onChange={(e) => setEditingItem({...editingItem, postleitzahl: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ort">Ort</Label>
+                    <Input
+                      id="ort"
+                      value={editingItem.ort}
+                      onChange={(e) => setEditingItem({...editingItem, ort: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="heizungshersteller">Heizungshersteller</Label>
+                    <Input
+                      id="heizungshersteller"
+                      value={editingItem.heizungshersteller}
+                      onChange={(e) => setEditingItem({...editingItem, heizungshersteller: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="baujahr">Baujahr</Label>
+                    <Input
+                      id="baujahr"
+                      type="number"
+                      value={editingItem.baujahr}
+                      onChange={(e) => setEditingItem({...editingItem, baujahr: parseInt(e.target.value)})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="heizsystem">Heizsystem</Label>
+                    <Input
+                      id="heizsystem"
+                      value={editingItem.heizsystem}
+                      onChange={(e) => setEditingItem({...editingItem, heizsystem: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="heizungstechnik">Heizungstechnik</Label>
+                    <Input
+                      id="heizungstechnik"
+                      value={editingItem.heizungstechnik}
+                      onChange={(e) => setEditingItem({...editingItem, heizungstechnik: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="energietraeger">Energieträger</Label>
+                    <Input
+                      id="energietraeger"
+                      value={editingItem.energietraeger}
+                      onChange={(e) => setEditingItem({...editingItem, energietraeger: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="typenbezeichnung">Typenbezeichnung</Label>
+                    <Input
+                      id="typenbezeichnung"
+                      value={editingItem.typenbezeichnung}
+                      onChange={(e) => setEditingItem({...editingItem, typenbezeichnung: e.target.value})}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="typenbezeichnungUnbekannt"
+                      checked={editingItem.typenbezeichnungUnbekannt}
+                      onCheckedChange={(checked) => setEditingItem({...editingItem, typenbezeichnungUnbekannt: checked as boolean})}
+                    />
+                    <Label htmlFor="typenbezeichnungUnbekannt">Typenbezeichnung unbekannt</Label>
+                  </div>
+                  <div>
+                    <Label htmlFor="energieausweis">Energieausweis</Label>
+                    <Input
+                      id="energieausweis"
+                      value={editingItem.energieausweis}
+                      onChange={(e) => setEditingItem({...editingItem, energieausweis: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="energieausweisDate">Energieausweis Datum</Label>
+                    <Input
+                      id="energieausweisDate"
+                      type="date"
+                      value={editingItem.energieausweisDate}
+                      onChange={(e) => setEditingItem({...editingItem, energieausweisDate: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="istEigentuemer">Ist Eigentümer</Label>
+                    <Select
+                      value={editingItem.istEigentuemer}
+                      onValueChange={(value) => setEditingItem({...editingItem, istEigentuemer: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wählen Sie den Eigentümerstatus" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Ja">Ja</SelectItem>
+                        <SelectItem value="Nein">Nein</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              )}
-              <DialogFooter>
-                <Button onClick={handleSave} disabled={isLoading}>
-                  {isLoading ? 'Wird gespeichert...' : 'Speichern'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="datenschutzUndNutzungsbedingungen"
+                      checked={editingItem.datenschutzUndNutzungsbedingungen}
+                      onCheckedChange={(checked) => setEditingItem({...editingItem, datenschutzUndNutzungsbedingungen: checked as boolean})}
+                    />
+                    <Label htmlFor="datenschutzUndNutzungsbedingungen">Datenschutz und Nutzungsbedingungen</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="einwilligungDatenverarbeitung"
+                      checked={editingItem.einwilligungDatenverarbeitung}
+                      onCheckedChange={(checked) => setEditingItem({...editingItem, einwilligungDatenverarbeitung: checked as boolean})}
+                    />
+                    <Label htmlFor="einwilligungDatenverarbeitung">Einwilligung Datenverarbeitung</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="aufforderungSofortigeTaetigkeit"
+                      checked={editingItem.aufforderungSofortigeTaetigkeit}
+                      onCheckedChange={(checked) => setEditingItem({...editingItem, aufforderungSofortigeTaetigkeit: checked as boolean})}
+                    />
+                    <Label htmlFor="aufforderungSofortigeTaetigkeit">Aufforderung sofortige Tätigkeit</Label>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={handleSave} disabled={isLoading} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+                {isLoading ? 'Wird gespeichert...' : 'Speichern'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <Dialog open={watchingItem !== null} onOpenChange={() => setWatchingItem(null)}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Heizungsplakette Details</DialogTitle>
-              </DialogHeader>
-              {watchingItem && (
-                <Tabs defaultValue="seite1" className="w-full">
-                  <TabsList>
-                    <TabsTrigger value="seite1">Seite 1</TabsTrigger>
-                    <TabsTrigger value="seite2">Seite 2</TabsTrigger>
-                    <TabsTrigger value="seite3">Seite 3</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="seite1">
-                    <div className="grid gap-4 py-4">
-                      <div><strong>Art der Immobilie:</strong> {watchingItem.artDerImmobilie}</div>
-                      <div><strong>Heizungsart:</strong> {watchingItem.heizungsart}</div>
-                      <div><strong>E-Mail:</strong> {watchingItem.email}</div>
-                      <div><strong>Status:</strong> {watchingItem.status}</div>
-                      <div><strong>Vorname:</strong> {watchingItem.vorname}</div>
-                      <div><strong>Nachname:</strong> {watchingItem.nachname}</div>
-                      <div><strong>Straße:</strong> {watchingItem.strasse}</div>
-                      <div><strong>Hausnummer:</strong> {watchingItem.hausnummer}</div>
-                      <div><strong>PLZ:</strong> {watchingItem.postleitzahl}</div>
-                      <div><strong>Ort:</strong> {watchingItem.ort}</div>
-                      <div><strong>Heizungshersteller:</strong> {watchingItem.heizungshersteller}</div>
-                      <div><strong>Baujahr:</strong> {watchingItem.baujahr}</div>
-                      <div><strong>Heizsystem:</strong> {watchingItem.heizsystem}</div>
-                      <div><strong>Heizungstechnik:</strong> {watchingItem.heizungstechnik}</div>
-                      <div><strong>Energieträger:</strong> {watchingItem.energietraeger}</div>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="seite2">
-                    <div className="grid gap-4 py-4">
-                      <div><strong>Typenbezeichnung:</strong> {watchingItem.typenbezeichnung}</div>
-                      <div><strong>Typenbezeichnung unbekannt:</strong> {watchingItem.typenbezeichnungUnbekannt ? 'Ja' : 'Nein'}</div>
-                      <div><strong>Energieausweis:</strong> {watchingItem.energieausweis}</div>
-                      <div><strong>Energieausweis Datum:</strong> {watchingItem.energieausweisDate}</div>
-                      <div><strong>Ist Eigentümer:</strong> {watchingItem.istEigentuemer}</div>
-                      <div><strong>Datenschutz und Nutzungsbedingungen:</strong> {watchingItem.datenschutzUndNutzungsbedingungen ? 'Ja' : 'Nein'}</div>
-                      <div><strong>Einwilligung Datenverarbeitung:</strong> {watchingItem.einwilligungDatenverarbeitung ? 'Ja' : 'Nein'}</div>
-                      <div><strong>Aufforderung sofortige Tätigkeit:</strong> {watchingItem.aufforderungSofortigeTaetigkeit ? 'Ja' : 'Nein'}</div>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="seite3">
-                    <div className="grid gap-4 py-4">
-                      <div><strong>Verzicht auf Heizungsanlage Fotos:</strong> {watchingItem.verzichtAufHeizungsanlageFotos ? 'Ja' : 'Nein'}</div>
-                      <div><strong>Verzicht auf Heizungsetikette Fotos:</strong> {watchingItem.verzichtAufHeizungsetiketteFotos ? 'Ja' : 'Nein'}</div>
-                      <div><strong>Verzicht auf Heizungslabel Fotos:</strong> {watchingItem.verzichtAufHeizungslabelFotos ? 'Ja' : 'Nein'}</div>
-                      <div><strong>Verzicht auf Bedienungsanleitung Fotos:</strong> {watchingItem.verzichtAufBedienungsanleitungFotos ? 'Ja' : 'Nein'}</div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              )}
-            </DialogContent>
-          </Dialog>
-        </>
-      )}
+        <Dialog open={watchingItem !== null} onOpenChange={() => setWatchingItem(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
+            <DialogHeader>
+              <DialogTitle className="dark:text-gray-200">Heizungsplakette Details</DialogTitle>
+            </DialogHeader>
+            {watchingItem && (
+              <Tabs defaultValue="seite1" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="seite1">Seite 1</TabsTrigger>
+                  <TabsTrigger value="seite2">Seite 2</TabsTrigger>
+                  <TabsTrigger value="seite3">Seite 3</TabsTrigger>
+                </TabsList>
+                <TabsContent value="seite1">
+                  <div className="grid gap-4 py-4">
+                    <div><strong>Art der Immobilie:</strong> {watchingItem.artDerImmobilie}</div>
+                    <div><strong>Heizungsart:</strong> {watchingItem.heizungsart}</div>
+                    <div><strong>E-Mail:</strong> {watchingItem.email}</div>
+                    <div><strong>Status:</strong> {watchingItem.status}</div>
+                    <div><strong>Vorname:</strong> {watchingItem.vorname}</div>
+                    <div><strong>Nachname:</strong> {watchingItem.nachname}</div>
+                    <div><strong>Straße:</strong> {watchingItem.strasse}</div>
+                    <div><strong>Hausnummer:</strong> {watchingItem.hausnummer}</div>
+                    <div><strong>PLZ:</strong> {watchingItem.postleitzahl}</div>
+                    <div><strong>Ort:</strong> {watchingItem.ort}</div>
+                    <div><strong>Heizungshersteller:</strong> {watchingItem.heizungshersteller}</div>
+                    <div><strong>Baujahr:</strong> {watchingItem.baujahr}</div>
+                    <div><strong>Heizsystem:</strong> {watchingItem.heizsystem}</div>
+                    <div><strong>Heizungstechnik:</strong> {watchingItem.heizungstechnik}</div>
+                    <div><strong>Energieträger:</strong> {watchingItem.energietraeger}</div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="seite2">
+                  <div className="grid gap-4 py-4">
+                    <div><strong>Typenbezeichnung:</strong> {watchingItem.typenbezeichnung}</div>
+                    <div><strong>Typenbezeichnung unbekannt:</strong> {watchingItem.typenbezeichnungUnbekannt ? 'Ja' : 'Nein'}</div>
+                    <div><strong>Energieausweis:</strong> {watchingItem.energieausweis}</div>
+                    <div><strong>Energieausweis Datum:</strong> {watchingItem.energieausweisDate}</div>
+                    <div><strong>Ist Eigentümer:</strong> {watchingItem.istEigentuemer}</div>
+                    <div><strong>Datenschutz und Nutzungsbedingungen:</strong> {watchingItem.datenschutzUndNutzungsbedingungen ? 'Ja' : 'Nein'}</div>
+                    <div><strong>Einwilligung Datenverarbeitung:</strong> {watchingItem.einwilligungDatenverarbeitung ? 'Ja' : 'Nein'}</div>
+                    <div><strong>Aufforderung sofortige Tätigkeit:</strong> {watchingItem.aufforderungSofortigeTaetigkeit ? 'Ja' : 'Nein'}</div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="seite3">
+                  <div className="grid gap-4 py-4">
+                    <div><strong>Verzicht auf Heizungsanlage Fotos:</strong> {watchingItem.verzichtAufHeizungsanlageFotos ? 'Ja' : 'Nein'}</div>
+                    <div><strong>Verzicht auf Heizungsetikette Fotos:</strong> {watchingItem.verzichtAufHeizungsetiketteFotos ? 'Ja' : 'Nein'}</div>
+                    <div><strong>Verzicht auf Heizungslabel Fotos:</strong> {watchingItem.verzichtAufHeizungslabelFotos ? 'Ja' : 'Nein'}</div>
+                    <div><strong>Verzicht auf Bedienungsanleitung Fotos:</strong> {watchingItem.verzichtAufBedienungsanleitungFotos ? 'Ja' : 'Nein'}</div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }
