@@ -15,12 +15,14 @@ def upload_to_vercel_blob(file_bytes, filename):
         parts = blob_rw_token.split('_')
         if len(parts) < 4 or parts[0] != 'vercel' or parts[1] != 'blob' or parts[2] != 'rw':
             raise ValueError("Invalid BLOB_READ_WRITE_TOKEN format.")
-        store_id = parts[3]
-        print(f"DEBUG: Extracted Store ID: {store_id}") # Log extracted store ID
+        store_id_original = parts[3]
+        store_id = store_id_original.lower() # Force store ID to lowercase
+        print(f"DEBUG: Extracted Store ID (Original): {store_id_original}") 
+        print(f"DEBUG: Using Store ID (Lowercase): {store_id}") # Log lowercase store ID being used
     except Exception as e:
         raise ValueError(f"Could not parse BLOB_READ_WRITE_TOKEN: {e}")
         
-    upload_url = f"https://{store_id}.blob.vercel-storage.com/{filename}"
+    upload_url = f"https://{store_id}.blob.vercel-storage.com/{filename}" # Use lowercase store_id
     headers = {
         "Authorization": f"Bearer {blob_rw_token}",
         "x-api-version": "6", 
