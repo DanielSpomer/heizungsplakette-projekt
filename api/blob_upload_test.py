@@ -8,6 +8,7 @@ from datetime import datetime
 # --- Vercel Blob Upload Function (Adapted) --- #
 def upload_to_vercel_blob(file_bytes, filename):
     blob_rw_token = os.environ.get("BLOB_READ_WRITE_TOKEN")
+    print(f"DEBUG: Using BLOB_READ_WRITE_TOKEN: {blob_rw_token[:20]}..." if blob_rw_token else "DEBUG: BLOB_READ_WRITE_TOKEN not found!") # Log partial token
     if not blob_rw_token:
         raise ValueError("BLOB_READ_WRITE_TOKEN environment variable not set.")
     try:
@@ -15,6 +16,7 @@ def upload_to_vercel_blob(file_bytes, filename):
         if len(parts) < 4 or parts[0] != 'vercel' or parts[1] != 'blob' or parts[2] != 'rw':
             raise ValueError("Invalid BLOB_READ_WRITE_TOKEN format.")
         store_id = parts[3]
+        print(f"DEBUG: Extracted Store ID: {store_id}") # Log extracted store ID
     except Exception as e:
         raise ValueError(f"Could not parse BLOB_READ_WRITE_TOKEN: {e}")
         
