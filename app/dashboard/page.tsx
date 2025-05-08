@@ -253,12 +253,16 @@ export default function Page() {
       }
       const data = await res.json();
       setPythonResponse(data.message);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      let errorMessage = "Konnte das Python-Skript nicht ausführen.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       console.error("Python test script error:", error);
-      setPythonResponse(`Error: ${error.message}`);
+      setPythonResponse(`Error: ${errorMessage}`);
       toast({
         title: "Python Script Fehler",
-        description: error.message || "Konnte das Python-Skript nicht ausführen.",
+        description: errorMessage,
         variant: "destructive",
       })
     }
