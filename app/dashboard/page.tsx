@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, MoreHorizontal, Edit, Eye, Check, X, Sun, Moon } from 'lucide-react'
+import { Search, MoreHorizontal, Edit, Eye, Check, X, Sun, Moon, FileText } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -93,6 +93,7 @@ export default function Page() {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [pdfGeneratingItemId, setPdfGeneratingItemId] = useState<number | null>(null);
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -241,6 +242,37 @@ export default function Page() {
     }
   };
 
+  const handleGeneratePdf = async (itemId: number) => {
+    setPdfGeneratingItemId(itemId);
+    try {
+      const response = await fetch(`/api/create_pdf?id=${itemId}`);
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        toast({
+          title: "PDF Generiert",
+          description: `PDF erfolgreich erstellt und hochgeladen. URL: ${data.url}`,
+        });
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error(data.error || "Unbekannter Fehler bei der PDF-Generierung.");
+      }
+    } catch (error: unknown) {
+      let errorMessage = "Fehler bei der PDF-Generierung.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      console.error("PDF Generation Error:", error);
+      toast({
+        title: "Fehler bei PDF-Generierung",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setPdfGeneratingItemId(null);
+    }
+  };
+
   if (isLoading || !mounted) {
     return <LoadingSpinner />
   }
@@ -359,6 +391,14 @@ export default function Page() {
                         <DropdownMenuItem onClick={() => handleWatch(item)} className="dark:text-gray-300 dark:hover:bg-gray-700">
                           <Eye className="mr-2 h-4 w-4" />
                           Beobachten
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleGeneratePdf(item.id)} 
+                          disabled={pdfGeneratingItemId === item.id}
+                          className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          {pdfGeneratingItemId === item.id ? "Generiere PDF..." : "PDF generieren"}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isLoading || item.status === 'Genehmigt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
                           <Check className="mr-2 h-4 w-4" />

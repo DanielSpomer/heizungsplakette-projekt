@@ -1,0 +1,3 @@
+psycopg2-binary
+requests
+# pandas, Pillow, PyPDF2, reportlab are already implicitly used by the script 
