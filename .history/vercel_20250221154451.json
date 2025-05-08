@@ -1,0 +1,24 @@
+{
+    "rewrites": [
+      {
+        "source": "/",
+        "has": [
+          {
+            "type": "host",
+            "value": "finetuning.heizungsplakette.de"
+          }
+        ],
+        "destination": "/direct"
+      },
+      {
+        "source": "/:path*",
+        "has": [
+          {
+            "type": "host",
+            "value": "finetuning.heizungsplakette.de"
+          }
+        ],
+        "destination": "/direct/:path*"
+      }
+    ]
+  }

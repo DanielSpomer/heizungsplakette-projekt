@@ -1,0 +1,15 @@
+{
+    "redirects": [
+      {
+        "source": "/:path*",
+        "has": [
+          {
+            "type": "host",
+            "value": "finetuning.heizungsplakette.de"
+          }
+        ],
+        "destination": "https://heizungsplakette.de/direct/:path*",
+        "permanent": true
+      }
+    ]
+  }
