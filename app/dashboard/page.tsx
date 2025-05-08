@@ -109,35 +109,29 @@ export default function Page() {
   }, [toast])
 
   useEffect(() => {
-    // const verifyTokenAndFetchData = async () => {
-    //   try {
-    //     const response = await fetch('/api/auth/verify')
-    //     const data = await response.json()
+    const verifyTokenAndFetchData = async () => {
+      try {
+        const response = await fetch('/api/auth/verify')
+        const data = await response.json()
 
-    //     console.log('Auth verification response:', data)
+        console.log('Auth verification response:', data)
 
-    //     if (!data.isAuthenticated) {
-    //       console.log('Not authenticated, redirecting to login')
-    //       router.push('/login')
-    //     } else {
-    //       console.log('Authenticated, fetching data')
-    //       await fetchHeizungsplaketten()
-    //     }
-    //   } catch (error) {
-    //     console.error('Auth verification failed:', error)
-    //     router.push('/login')
-    //   } finally {
-    //     setIsLoading(false)
-    //   }
-    // }
-
-    // verifyTokenAndFetchData()
-    const fetchData = async () => {
-      setIsLoading(true);
-      await fetchHeizungsplaketten();
-      setIsLoading(false);
+        if (!data.isAuthenticated) {
+          console.log('Not authenticated, redirecting to login')
+          router.push('/login')
+        } else {
+          console.log('Authenticated, fetching data')
+          await fetchHeizungsplaketten()
+        }
+      } catch (error) {
+        console.error('Auth verification failed:', error)
+        router.push('/login')
+      } finally {
+        setIsLoading(false)
+      }
     }
-    fetchData();
+
+    verifyTokenAndFetchData()
   }, [router, fetchHeizungsplaketten])
 
   const handleLogout = async () => {
