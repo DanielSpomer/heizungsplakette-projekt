@@ -117,12 +117,22 @@ export default function Page() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
-      await fetchHeizungsplaketten();
-      setIsLoading(false);
-    }
+      try {
+        const heizungsplaketteResponse = await fetch('/api/heizungsplakette');
+        if (!heizungsplaketteResponse.ok) {
+          throw new Error('Netzwerkantwort war nicht ok für Heizungsplakette');
+        }
+        const data = await heizungsplaketteResponse.json();
+        setHeizungsplaketten(data);
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Daten:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchData();
-  }, [fetchHeizungsplaketten])
+  }, [router]);
 
   useEffect(() => {
     setMounted(true)
