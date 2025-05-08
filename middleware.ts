@@ -20,16 +20,14 @@ export function middleware(request: NextRequest) {
   }
 
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!token) {
-      console.log('No token, redirecting to login')
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-    console.log('Token present, allowing access to dashboard')
+    // Allow access to dashboard regardless of token
+    console.log('Allowing access to dashboard')
     return NextResponse.next()
   }
 
-  if (request.nextUrl.pathname === '/login' && token) {
-    console.log('Token present on login page, redirecting to dashboard')
+  if (request.nextUrl.pathname === '/login') {
+    // Redirect /login to /dashboard
+    console.log('Redirecting /login to /dashboard')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -37,5 +35,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/login'], // Keep /login in matcher to handle the redirect
 }
