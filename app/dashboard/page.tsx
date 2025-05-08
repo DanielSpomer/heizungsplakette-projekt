@@ -245,18 +245,23 @@ export default function Page() {
   const handleGeneratePdf = async (itemId: number) => {
     setPdfGeneratingItemId(itemId);
     try {
-      const response = await fetch(`/api/create_pdf?id=${itemId}`);
+      const response = await fetch(`/api/create_pdf?id=${itemId.toString()}`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+
       const data = await response.json();
 
-      if (response.ok && data.url) {
+      if (data.message) {
         toast({
-          title: "PDF Generiert",
-          description: `PDF erfolgreich erstellt und hochgeladen. URL: ${data.url}`,
+          title: "API Erreicht",
+          description: data.message,
         });
-        window.open(data.url, '_blank');
       } else {
-        throw new Error(data.error || "Unbekannter Fehler bei der PDF-Generierung.");
+        throw new Error(data.error || "Unerwartete Antwort vom Server.");
       }
+
     } catch (error: unknown) {
       let errorMessage = "Fehler bei der PDF-Generierung.";
       if (error instanceof Error) {
@@ -393,7 +398,7 @@ export default function Page() {
                           Beobachten
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleGeneratePdf(item.id)} 
+                          onClick={() => handleGeneratePdf(item.id)}
                           disabled={pdfGeneratingItemId === item.id}
                           className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
                         >

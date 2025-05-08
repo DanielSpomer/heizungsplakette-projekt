@@ -1,3 +1,4 @@
 psycopg2-binary
 requests
+python-dotenv
 # pandas, Pillow, PyPDF2, reportlab are already implicitly used by the script 
