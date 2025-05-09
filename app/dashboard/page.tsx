@@ -144,43 +144,6 @@ export default function Page() {
     setMounted(true)
   }, [])
 
-  const handleTestUpdatePdfUrl = async (id: number) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/heizungsplakette/${id}/test-update-pdf`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pdfUrl: 'test.com' }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Test-Update der PDF-URL');
-      }
-
-      await fetchHeizungsplaketten(); // Refresh data
-      toast({
-        title: "PDF URL Aktualisiert (Test)",
-        description: `PDF URL für ID ${id} auf "test.com" gesetzt.`,
-      });
-    } catch (error: unknown) {
-      console.error('Fehler beim Test-Update der PDF-URL:', error);
-      let errorMessage = "Die PDF-URL konnte nicht aktualisiert werden (Test).";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      toast({
-        title: "Fehler",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
@@ -589,9 +552,6 @@ export default function Page() {
                         <DropdownMenuItem onClick={() => handleReject(item.id)} disabled={isLoading || item.status === 'Abgelehnt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
                           <X className="mr-2 h-4 w-4" />
                           Ablehnen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleTestUpdatePdfUrl(item.id)} className="dark:text-gray-300 dark:hover:bg-gray-700">
-                          Test PDF Update
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
