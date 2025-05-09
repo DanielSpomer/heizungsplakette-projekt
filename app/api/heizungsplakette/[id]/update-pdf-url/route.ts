@@ -62,4 +62,16 @@ export async function PUT(
     
     return NextResponse.json({ error: errorMessage, details: (error instanceof Error) ? error.message : String(error) }, { status: statusCode });
   }
+}
+
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  console.log(`[API UPDATE PDF_URL GET] Received GET request for ID: ${params.id}`);
+  return NextResponse.json({
+    message: `GET request received by update-pdf-url for ID ${params.id}`,
+    id: params.id,
+    timestamp: new Date().toISOString() // Added timestamp for uniqueness
+  });
 } 
