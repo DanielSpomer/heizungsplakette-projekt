@@ -38,11 +38,21 @@ export async function PUT(
     });
 
     return NextResponse.json(updatedPlakette);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Fehler beim Test-Update der PDF-URL:', error);
-    if (error.code === 'P2025') { // Prisma error code for record not found
-      return NextResponse.json({ error: 'Eintrag nicht gefunden' }, { status: 404 });
+    let errorMessage = 'Fehler beim Aktualisieren der PDF-URL';
+    let statusCode = 500;
+
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      if ((error as { code: string }).code === 'P2025') { // Prisma error code for record not found
+        errorMessage = 'Eintrag nicht gefunden';
+        statusCode = 404;
+      }
     }
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren der PDF-URL', details: error.message }, { status: 500 });
+    
+    if (error instanceof Error) {
+      return NextResponse.json({ error: errorMessage, details: error.message }, { status: statusCode });
+    } 
+    return NextResponse.json({ error: errorMessage, details: String(error) }, { status: statusCode });
   }
 } 

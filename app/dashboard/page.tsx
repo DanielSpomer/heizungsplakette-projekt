@@ -165,11 +165,15 @@ export default function Page() {
         title: "PDF URL Aktualisiert (Test)",
         description: `PDF URL für ID ${id} auf "test.com" gesetzt.`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Fehler beim Test-Update der PDF-URL:', error);
+      let errorMessage = "Die PDF-URL konnte nicht aktualisiert werden (Test).";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Fehler",
-        description: error.message || "Die PDF-URL konnte nicht aktualisiert werden (Test).",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
