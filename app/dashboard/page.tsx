@@ -104,8 +104,8 @@ export default function Page() {
       if (!response.ok) {
         throw new Error('Fehler beim Abrufen der Daten')
       }
-      const data = await response.json()
-      setHeizungsplaketten(data.map((item: any) => ({ ...item, pdfUrl: item.pdfUrl || null })));
+      const data: HeizungsplaketteItem[] = await response.json()
+      setHeizungsplaketten(data.map(item => ({ ...item, pdfUrl: item.pdfUrl || null })));
     } catch (error) {
       console.error('Fehler beim Abrufen der Heizungsplaketten:', error)
       toast({
@@ -124,8 +124,8 @@ export default function Page() {
         if (!heizungsplaketteResponse.ok) {
           throw new Error('Netzwerkantwort war nicht ok für Heizungsplakette');
         }
-        const data = await heizungsplaketteResponse.json();
-        setHeizungsplaketten(data.map((item: any) => ({ ...item, pdfUrl: item.pdfUrl || null })));
+        const data: HeizungsplaketteItem[] = await heizungsplaketteResponse.json();
+        setHeizungsplaketten(data.map(item => ({ ...item, pdfUrl: item.pdfUrl || null })));
       } catch (error) {
         console.error('Fehler beim Abrufen der Daten:', error);
         toast({
