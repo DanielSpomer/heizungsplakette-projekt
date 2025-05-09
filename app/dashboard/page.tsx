@@ -531,7 +531,7 @@ export default function Page() {
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => handleGeneratePdf(item.id)}
-                          disabled={pdfGeneratingItemId === item.id}
+                          disabled={pdfGeneratingItemId === item.id || !!item.pdfUrl}
                           className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
                         >
                           <FileText className="mr-2 h-4 w-4" />
