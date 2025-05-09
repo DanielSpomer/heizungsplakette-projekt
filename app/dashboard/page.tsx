@@ -529,14 +529,23 @@ export default function Page() {
                           <Eye className="mr-2 h-4 w-4" />
                           Beobachten
                         </DropdownMenuItem>
+                        {(() => {
+                          console.log(`Item ID: ${item.id}, PDF URL: "${item.pdfUrl}", !!item.pdfUrl: ${!!item.pdfUrl}, pdfGeneratingItemId: ${pdfGeneratingItemId}`);
+                          console.log(`  -> For PDF Gen Button, disabled prop will be: ${pdfGeneratingItemId === item.id || !!item.pdfUrl}`);
+                          return null; // Ensure it's a valid JSX expression
+                        })()}
                         <DropdownMenuItem 
                           onClick={() => handleGeneratePdf(item.id)}
-                          disabled={pdfGeneratingItemId === item.id || !!item.pdfUrl}
+                          disabled={pdfGeneratingItemId === item.id || !!item.pdfUrl} 
                           className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           {pdfGeneratingItemId === item.id ? "Generiere PDF..." : "PDF generieren"}
                         </DropdownMenuItem>
+                        {(() => {
+                          console.log(`  -> For PDF Preview Button, disabled prop will be: ${!item.pdfUrl || pdfGeneratingItemId === item.id}`);
+                          return null; // Ensure it's a valid JSX expression
+                        })()}
                         <DropdownMenuItem 
                           onClick={() => handlePreviewPdf(item.pdfUrl)}
                           disabled={!item.pdfUrl || pdfGeneratingItemId === item.id}
