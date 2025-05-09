@@ -178,6 +178,7 @@ def upload_to_vercel_blob(pdf_bytes, filename):
 
 # --- PDF-Generierung (Adapted) --- #
 def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
+    print(f"DEBUG: generate_pdf_in_memory called. Received row_data (first 500 chars): {json.dumps(dict(row_data), default=str)[:500]}")
     script_dir = os.path.dirname(__file__)
     full_template_path = os.path.join(script_dir, template_path)
     image_base_path = os.path.join(script_dir, "images")
@@ -205,6 +206,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
 
     img_sources = []
     def add_imgs(key_name, label):
+        print(f"DEBUG: add_imgs for {key_name}, raw value: {row_data.get(key_name)}")
         for p in safe_split(row_data.get(key_name)):
             path = os.path.join(image_base_path, p) 
             img_sources.append((path, label))
@@ -214,7 +216,9 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     add_imgs("heizungslabelFotos", "Foto zum Heizungslabel")
     add_imgs("bedienungsanleitungFotos", "Foto zur Bedienungsanleitung")
 
+    print(f"DEBUG: img_sources after populating: {img_sources}")
     img_groups = [img_sources[i:i+2] for i in range(0, len(img_sources), 2)]
+    print(f"DEBUG: img_groups created: {img_groups}")
 
     photo_note = (
         "Es wurden keine Fotos bereitgestellt." if not img_sources else
@@ -247,7 +251,8 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     }
 
     for i, group in enumerate(img_groups):
-        page_idx = i + 2 
+        page_idx = i + 2
+        print(f"DEBUG: Processing img_group index {i}, page_idx {page_idx}, content: {group}") 
         if page_idx >= len(template_reader.pages):
             print(f"⚠️ Template does not have page {page_idx + 1}. Skipping image group.")
             break
@@ -285,6 +290,7 @@ class handler(BaseHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         query_params = parse_qs(parsed_path.query)
         item_id = query_params.get('id', [None])[0]
+        print(f"DEBUG: do_GET called for item_id: {item_id}")
 
         if not item_id:
             self.send_response(400)
@@ -296,6 +302,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             print(f"Fetching data for ID: {item_id}") # Server-side log
             data = fetch_heizungsplakette_data(item_id)
+            print(f"DEBUG: Data fetched in do_GET for ID {item_id} (first 500 chars): {json.dumps(data, default=str)[:500] if data else 'No data found'}")
             if not data:
                 self.send_response(404)
                 self.send_header('Content-type', 'application/json')
