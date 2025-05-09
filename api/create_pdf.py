@@ -28,17 +28,22 @@ TEST_MODE = False # Tkinter GUI and local file opening will be disabled
 
 # Safely split CSV fields into list, filtering out "nan" (Adapt if data comes from DB differently)
 def safe_split(value):
-    if value is None or pd.isna(value): # Handle None or Pandas NA
+    if value is None:
         return []
-    if isinstance(value, list):
+    if isinstance(value, list): # Check for list before pd.isna
         # If it's already a list, process its elements (assuming they are strings or can be stringified)
-        # and ensure they are not just empty strings after stripping, though original code kept empty if not 'nan'
-        # For consistency with original, we'll keep potentially empty strings if they are not 'nan'
         return [str(v).strip() for v in value if str(v).strip().lower() != "nan"]
+    
+    # Now pd.isna should be safer as it's less likely to receive a raw Python list here
+    # It's primarily for scalar, Series, or DataFrame inputs. 
+    # If 'value' is a scalar that pd.isna handles, it's fine.
+    if pd.isna(value): 
+        return []
+    
     if isinstance(value, str):
         # If it's a string, split and process
         return [v.strip() for v in value.split(',') if v.strip().lower() != "nan"]
-    # Fallback for other unexpected types
+    
     print(f"⚠️ safe_split received unexpected type for value: {type(value)}, value: {value}")
     return []
 
