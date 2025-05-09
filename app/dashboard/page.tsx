@@ -303,14 +303,50 @@ export default function Page() {
         handleUploadUrl: '/api/blob-upload', 
       });
 
-      // TODO: Step 2 - Call API to save newBlobResult.url to the database for this itemId
-      // For now, we'll update local state and show preview
-      setHeizungsplaketten(prevPlaketten => 
-        prevPlaketten.map(p => 
-          p.id === itemId ? { ...p, pdfUrl: newBlobResult.url } : p
-        )
-      );
-      setPdfPreviewUrl(newBlobResult.url);
+      // --- Save PDF URL to Database ---
+      if (newBlobResult && newBlobResult.url) {
+        try {
+          const updateResponse = await fetch(`/api/heizungsplakette/${itemId}/update-pdf-url`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pdfUrl: newBlobResult.url }),
+          });
+
+          if (!updateResponse.ok) {
+            const errorData = await updateResponse.json().catch(() => ({ error: "Failed to parse error response from update-pdf-url" }));
+            console.error('Failed to save PDF URL to database:', errorData.error || updateResponse.statusText);
+            toast({
+              title: "Speicherfehler DB",
+              description: `PDF URL konnte nicht in DB gespeichert werden: ${errorData.error || updateResponse.statusText}`,
+              variant: "destructive",
+            });
+            // Decide if you want to proceed with UI update if DB save fails
+          } else {
+            console.log('PDF URL successfully saved to database');
+            // Update local state ONLY after successful DB save
+            setHeizungsplaketten(prevPlaketten => 
+              prevPlaketten.map(p => 
+                p.id === itemId ? { ...p, pdfUrl: newBlobResult.url } : p
+              )
+            );
+            setPdfPreviewUrl(newBlobResult.url); // Show preview
+          }
+        } catch (dbError: unknown) {
+          console.error('Error calling API to save PDF URL:', dbError);
+          let dbErrorMessage = "Unbekannter Fehler beim Speichern der PDF URL via API.";
+          if (dbError instanceof Error) {
+            dbErrorMessage = dbError.message;
+          }
+          toast({
+              title: "API Fehler DB",
+              description: dbErrorMessage,
+              variant: "destructive",
+            });
+        }
+      } else {
+        throw new Error("Blob upload succeeded but no URL was returned.");
+      }
+      // --- End Save PDF URL to Database ---
 
       toast({
         title: "PDF Generiert & Hochgeladen",
