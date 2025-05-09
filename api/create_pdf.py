@@ -28,9 +28,19 @@ TEST_MODE = False # Tkinter GUI and local file opening will be disabled
 
 # Safely split CSV fields into list, filtering out "nan" (Adapt if data comes from DB differently)
 def safe_split(value):
-    if pd.isna(value) or value is None: # Adjusted for potential None from DB
+    if value is None or pd.isna(value): # Handle None or Pandas NA
         return []
-    return [v.strip() for v in str(value).split(',') if v.strip().lower() != "nan"]
+    if isinstance(value, list):
+        # If it's already a list, process its elements (assuming they are strings or can be stringified)
+        # and ensure they are not just empty strings after stripping, though original code kept empty if not 'nan'
+        # For consistency with original, we'll keep potentially empty strings if they are not 'nan'
+        return [str(v).strip() for v in value if str(v).strip().lower() != "nan"]
+    if isinstance(value, str):
+        # If it's a string, split and process
+        return [v.strip() for v in value.split(',') if v.strip().lower() != "nan"]
+    # Fallback for other unexpected types
+    print(f"⚠️ safe_split received unexpected type for value: {type(value)}, value: {value}")
+    return []
 
 # Scale image proportionally to a given height
 def scale_image(image_path, target_height):
