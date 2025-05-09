@@ -1,48 +1,21 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, Prisma } from '@prisma/client'; // Import Prisma for error types
 
-const prisma = new PrismaClient();
-
-// Temporarily changed from PUT to POST for diagnostics
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
+  console.log(`[DEBUG] POST request received for /api/heizungsplakette/${id}/update-pdf-url`);
   try {
-    const { id } = params;
-    const { pdfUrl } = await request.json();
-
-    if (!id || typeof pdfUrl !== 'string') {
-      return NextResponse.json({ error: 'Invalid request data: id and pdfUrl (string) are required.' }, { status: 400 });
-    }
-
-    // Validate if the ID looks like a CUID if that's your default
-    // For example: if (!/^[a-z0-9]{25}$/.test(id)) { 
-    //   return NextResponse.json({ error: 'Invalid ID format.' }, { status: 400 });
-    // }
-
-    const updatedPlakette = await prisma.heizungsplakette.update({
-      where: { id: id }, // Prisma CUIDs are strings
-      data: { pdfUrl: pdfUrl },
-    });
-
-    console.log(`Successfully updated pdfUrl for ${id}`); // Added success log
-    return NextResponse.json(updatedPlakette);
-  } catch (e: unknown) { // Explicitly type e as unknown
-    console.error(`Error updating pdfUrl for ${params?.id || 'unknown ID'}:`, e); // Log with ID if available
-    let errorMessage = 'Failed to update PDF URL';
-    let statusCode = 500;
-
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      errorMessage = `Prisma error: ${e.message}`;
-      if (e.code === 'P2025') { // Record to update not found
-        errorMessage = 'Record not found';
-        statusCode = 404;
-      }
-      // Add other Prisma error codes to handle if needed
-    } else if (e instanceof Error) {
-        // Standard JavaScript error
-        errorMessage = e.message;
-    }
-    // For other types of e, the generic message is used
-
-    return NextResponse.json({ error: errorMessage, details: e instanceof Error ? e.toString() : String(e) }, { status: statusCode });
+    const body = await request.json();
+    console.log(`[DEBUG] Request body:`, body);
+    return NextResponse.json({ message: `POST request received for ID ${id}`, receivedBody: body });
+  } catch (e) {
+    console.error("[DEBUG] Error parsing JSON body or processing request:", e);
+    return NextResponse.json({ error: "Failed to process POST request", details: (e instanceof Error ? e.message : String(e)) }, { status: 400 });
   }
-} 
+}
+
+// You can add other methods if you want to test them too, e.g.:
+// export async function GET(request: Request, { params }: { params: { id: string } }) {
+//   const { id } = params;
+//   console.log(`[DEBUG] GET request received for /api/heizungsplakette/${id}/update-pdf-url`);
+//   return NextResponse.json({ message: `GET request received for ID ${id}` });
+// } 
