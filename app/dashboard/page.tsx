@@ -306,6 +306,7 @@ export default function Page() {
       // --- Save PDF URL to Database ---
       if (newBlobResult && newBlobResult.url) {
         try {
+          /* REMOVE THIS BLOCK
           const updateResponse = await fetch(`/api/heizungsplakette/${itemId}/update-pdf-url`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -331,9 +332,24 @@ export default function Page() {
             );
             setPdfPreviewUrl(newBlobResult.url); // Show preview
           }
+          */
+          // Simulate successful save for now for UI update, or decide on behavior
+          console.log('Simulating PDF URL update for UI for item ID:', itemId, 'URL:', newBlobResult.url);
+          // Update local state to reflect the change, assuming it would have been saved
+          setHeizungsplaketten(prevPlaketten => 
+            prevPlaketten.map(p => 
+              p.id === itemId ? { ...p, pdfUrl: newBlobResult.url } : p
+            )
+          );
+          setPdfPreviewUrl(newBlobResult.url); // Show preview
+          toast({
+            title: "Info",
+            description: "PDF URL generiert und lokal aktualisiert (DB-Speicherung entfernt).",
+          });
+
         } catch (dbError: unknown) {
-          console.error('Error calling API to save PDF URL:', dbError);
-          let dbErrorMessage = "Unbekannter Fehler beim Speichern der PDF URL via API.";
+          console.error('Error during the (now removed) API call to save PDF URL:', dbError);
+          let dbErrorMessage = "Unbekannter Fehler beim lokalen Aktualisieren der PDF URL.";
           if (dbError instanceof Error) {
             dbErrorMessage = dbError.message;
           }
