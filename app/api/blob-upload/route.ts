@@ -10,7 +10,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (
-        _pathname: string,
+        /*_pathname: string,
         /* clientPayload?: string | null */
       ) => {
         // This is where you would add authentication and authorization.
