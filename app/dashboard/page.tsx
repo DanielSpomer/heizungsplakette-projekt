@@ -340,53 +340,50 @@ export default function Page() {
         handleUploadUrl: '/api/blob-upload', 
       });
 
-      // --- Save PDF URL to Database ---
+      // --- Save PDF URL to Database using the new static route ---
       if (newBlobResult && newBlobResult.url) {
         try {
-          /* REMOVE THIS BLOCK
-          const updateResponse = await fetch(`/api/heizungsplakette/${itemId}/update-pdf-url`, {
-            method: 'POST',
+          // Convert itemId to string if it's not already, as the API expects a string ID (CUID)
+          const recordIdString = String(itemId); 
+
+          const updateResponse = await fetch('/api/update-record-pdf', { // New static API route
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pdfUrl: newBlobResult.url }),
+            body: JSON.stringify({ id: recordIdString, pdfUrl: newBlobResult.url }), // Send id in body
           });
 
           if (!updateResponse.ok) {
-            const errorData = await updateResponse.json().catch(() => ({ error: "Failed to parse error response from update-pdf-url" }));
-            console.error('Failed to save PDF URL to database:', errorData.error || updateResponse.statusText);
+            const errorData = await updateResponse.json().catch(() => ({ error: "Failed to parse error response from update-record-pdf" }));
+            const errorMessage = errorData.error || updateResponse.statusText || "Unbekannter Fehler beim Speichern der PDF URL";
+            console.error('Failed to save PDF URL to database via /api/update-record-pdf:', errorMessage);
             toast({
               title: "Speicherfehler DB",
-              description: `PDF URL konnte nicht in DB gespeichert werden: ${errorData.error || updateResponse.statusText}`,
+              description: `PDF URL konnte nicht in DB gespeichert werden: ${errorMessage}`,
               variant: "destructive",
             });
-            // Decide if you want to proceed with UI update if DB save fails
+            // Decide if you want to proceed with UI update if DB save fails, 
+            // or perhaps revert the blob upload if critical.
+            // For now, we will NOT update the UI if DB save fails.
           } else {
-            console.log('PDF URL successfully saved to database');
+            const updatedRecord = await updateResponse.json();
+            console.log('PDF URL successfully saved to database via /api/update-record-pdf, record:', updatedRecord);
+            
             // Update local state ONLY after successful DB save
             setHeizungsplaketten(prevPlaketten => 
               prevPlaketten.map(p => 
-                p.id === itemId ? { ...p, pdfUrl: newBlobResult.url } : p
+                // Ensure consistent ID type for comparison (string vs number)
+                String(p.id) === recordIdString ? { ...p, pdfUrl: newBlobResult.url } : p
               )
             );
             setPdfPreviewUrl(newBlobResult.url); // Show preview
+            toast({
+              title: "PDF Generiert & Gespeichert",
+              description: `PDF erfolgreich erstellt, hochgeladen und URL in DB gespeichert: ${newBlobResult.url}`,
+            });
           }
-          */
-          // Simulate successful save for now for UI update, or decide on behavior
-          console.log('Simulating PDF URL update for UI for item ID:', itemId, 'URL:', newBlobResult.url);
-          // Update local state to reflect the change, assuming it would have been saved
-          setHeizungsplaketten(prevPlaketten => 
-            prevPlaketten.map(p => 
-              p.id === itemId ? { ...p, pdfUrl: newBlobResult.url } : p
-            )
-          );
-          setPdfPreviewUrl(newBlobResult.url); // Show preview
-          toast({
-            title: "Info",
-            description: "PDF URL generiert und lokal aktualisiert (DB-Speicherung entfernt).",
-          });
-
         } catch (dbError: unknown) {
-          console.error('Error during the (now removed) API call to save PDF URL:', dbError);
-          let dbErrorMessage = "Unbekannter Fehler beim lokalen Aktualisieren der PDF URL.";
+          console.error('Error during API call to /api/update-record-pdf:', dbError);
+          let dbErrorMessage = "Unbekannter Fehler beim Speichern der PDF URL via API.";
           if (dbError instanceof Error) {
             dbErrorMessage = dbError.message;
           }
@@ -400,11 +397,6 @@ export default function Page() {
         throw new Error("Blob upload succeeded but no URL was returned.");
       }
       // --- End Save PDF URL to Database ---
-
-      toast({
-        title: "PDF Generiert & Hochgeladen",
-        description: `PDF erfolgreich erstellt und zu Vercel Blob hochgeladen: ${newBlobResult.url}`,
-      });
 
     } catch (error: unknown) {
       let errorMessage = "Fehler bei der PDF-Generierung oder dem Upload.";
