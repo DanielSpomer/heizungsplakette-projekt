@@ -6,7 +6,11 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     console.log('Attempting to fetch Heizungsplakette data...');
-    const heizungsplaketten = await prisma.heizungsplakette.findMany();
+    const heizungsplaketten = await prisma.heizungsplakette.findMany({
+        orderBy: {
+            createdAt: 'desc', 
+        }
+    });
     console.log(`Successfully fetched ${heizungsplaketten.length} Heizungsplakette records.`);
     return NextResponse.json(heizungsplaketten);
   } catch (error) {
@@ -20,8 +24,10 @@ export async function POST(req: Request) {
     const formData = await req.json();
     
     // Ensure all required fields are present and of the correct type
+    // Consider adding more robust validation here (e.g., using Zod)
     const sanitizedData = {
-      status: "Ausstehend",
+      status: "Ausstehend", // Default status
+      paymentStatus: formData.paymentStatus !== undefined ? Boolean(formData.paymentStatus) : false, // Default paymentStatus
       datenschutzUndNutzungsbedingungen: Boolean(formData.datenschutzUndNutzungsbedingungen),
       einwilligungDatenverarbeitung: Boolean(formData.einwilligungDatenverarbeitung),
       aufforderungSofortigeTaetigkeit: Boolean(formData.aufforderungSofortigeTaetigkeit),

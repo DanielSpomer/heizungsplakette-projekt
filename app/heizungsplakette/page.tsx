@@ -420,7 +420,9 @@ export default function HeizungsplaketteMaske() {
           console.error('Fehler beim Speichern der Heizungsplakette-Daten oder Senden der E-Mail:', error);
           // Here you could display an error message to the user
         }
-      }}}
+      }
+    }
+  }
 
   const handleStepClick = (step: number) => {
     if (visitedSteps.includes(step) || step <= currentStep) {
