@@ -63,4 +63,17 @@ export async function PUT(
     } 
     return NextResponse.json({ error: errorMessage, details: String(error) }, { status: statusCode });
   }
+}
+
+// New GET handler for diagnostics
+export async function GET(
+  request: Request, // Added request parameter to match signature
+  { params }: { params: { id: string } }
+) {
+  console.log(`[API TEST UPDATE GET] Received GET request for ID: ${params.id}`);
+  return NextResponse.json({ 
+    message: `GET request successfully received for ID ${params.id} in test-update-pdf route`,
+    id: params.id,
+    timestamp: new Date().toISOString()
+  });
 } 
