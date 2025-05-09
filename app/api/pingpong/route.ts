@@ -25,4 +25,22 @@ export async function PUT(request: Request) {
     receivedBody: bodyContent,
     timestamp: timestamp
   });
+}
+
+export async function POST(request: Request) {
+  const timestamp = new Date().toISOString();
+  console.log(`[PINGPONG API] POST request received at ${timestamp}`);
+  let bodyContent;
+  try {
+    bodyContent = await request.json();
+    console.log('[PINGPONG API] Parsed POST body:', bodyContent);
+  } catch (e) {
+    bodyContent = 'Could not parse POST body or body was empty';
+    console.log('[PINGPONG API] Error parsing POST body or body empty.');
+  }
+  return NextResponse.json({
+    message: 'Pong from POST!',
+    receivedBody: bodyContent,
+    timestamp: timestamp
+  });
 } 
