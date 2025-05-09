@@ -56,4 +56,5 @@ model Heizungsplakette {
   updatedAt                           DateTime @updatedAt
   paymentStatus                       Boolean  @default(false)
   herkunft                            String?
+  pdfUrl                              String?
 }

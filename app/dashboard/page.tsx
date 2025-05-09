@@ -62,6 +62,7 @@ type HeizungsplaketteItem = {
   verzichtAufHeizungslabelFotos: boolean;
   verzichtAufBedienungsanleitungFotos: boolean;
   status: string;
+  pdfUrl?: string | null;
 }
 
 const getStatusColor = (status: string): string => {
@@ -95,8 +96,6 @@ export default function Page() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [pdfGeneratingItemId, setPdfGeneratingItemId] = useState<number | null>(null);
-  const [blobTestLoading, setBlobTestLoading] = useState(false);
-  const [blobTestResult, setBlobTestResult] = useState<string | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   const fetchHeizungsplaketten = useCallback(async () => {
@@ -106,7 +105,7 @@ export default function Page() {
         throw new Error('Fehler beim Abrufen der Daten')
       }
       const data = await response.json()
-      setHeizungsplaketten(data)
+      setHeizungsplaketten(data.map((item: any) => ({ ...item, pdfUrl: item.pdfUrl || null })));
     } catch (error) {
       console.error('Fehler beim Abrufen der Heizungsplaketten:', error)
       toast({
@@ -119,22 +118,27 @@ export default function Page() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const heizungsplaketteResponse = await fetch('/api/heizungsplakette');
         if (!heizungsplaketteResponse.ok) {
           throw new Error('Netzwerkantwort war nicht ok für Heizungsplakette');
         }
         const data = await heizungsplaketteResponse.json();
-        setHeizungsplaketten(data);
+        setHeizungsplaketten(data.map((item: any) => ({ ...item, pdfUrl: item.pdfUrl || null })));
       } catch (error) {
         console.error('Fehler beim Abrufen der Daten:', error);
+        toast({
+          title: "Fehler",
+          description: "Daten konnten nicht geladen werden.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchData();
-  }, [router]);
+  }, [toast]);
 
   useEffect(() => {
     setMounted(true)
@@ -299,11 +303,19 @@ export default function Page() {
         handleUploadUrl: '/api/blob-upload', 
       });
 
+      // TODO: Step 2 - Call API to save newBlobResult.url to the database for this itemId
+      // For now, we'll update local state and show preview
+      setHeizungsplaketten(prevPlaketten => 
+        prevPlaketten.map(p => 
+          p.id === itemId ? { ...p, pdfUrl: newBlobResult.url } : p
+        )
+      );
+      setPdfPreviewUrl(newBlobResult.url);
+
       toast({
         title: "PDF Generiert & Hochgeladen",
         description: `PDF erfolgreich erstellt und zu Vercel Blob hochgeladen: ${newBlobResult.url}`,
       });
-      setPdfPreviewUrl(newBlobResult.url);
 
     } catch (error: unknown) {
       let errorMessage = "Fehler bei der PDF-Generierung oder dem Upload.";
@@ -321,43 +333,15 @@ export default function Page() {
     }
   };
 
-  const handleBlobUploadTest = async () => {
-    setBlobTestLoading(true);
-    setBlobTestResult(null);
-    try {
-      const now = new Date().toISOString();
-      const fileContent = `Hello from Dashboard Blob Test! Timestamp: ${now}`;
-      // Ensure the filename doesn't have problematic characters for a URL path
-      const safeTimestamp = now.replace(/[:.]/g, '-');
-      const fileName = `dashboard-blob-test-${safeTimestamp}.txt`;
-      const file = new File([fileContent], fileName, { type: 'text/plain' });
-
-      // Use the Vercel Blob client upload function
-      const newBlob = await upload(file.name, file, {
-        access: 'public', // Files will be publicly accessible
-        handleUploadUrl: '/api/blob-upload', // The new generic API route
-      });
-
+  const handlePreviewPdf = (url: string | null | undefined) => {
+    if (url) {
+      setPdfPreviewUrl(url);
+    } else {
       toast({
-        title: "Blob Upload Erfolg",
-        description: `Datei erfolgreich hochgeladen: ${newBlob.url}`,
+        title: "Hinweis",
+        description: "Für diesen Eintrag wurde noch kein PDF generiert oder gespeichert.",
+        variant: "default",
       });
-      setBlobTestResult(newBlob.url);
-
-    } catch (error: unknown) {
-      let errorMessage = "Fehler beim Blob Upload Test.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      console.error("Blob Upload Test Error:", error);
-      setBlobTestResult(`Error: ${errorMessage}`);
-      toast({
-        title: "Fehler beim Blob Upload Test",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setBlobTestLoading(false);
     }
   };
 
@@ -411,26 +395,6 @@ export default function Page() {
             />
             <Label htmlFor="show-details" className="text-gray-700 dark:text-gray-200">Details anzeigen</Label>
           </div>
-        </div>
-
-        <div className="mb-6 p-6 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow">
-          <h2 className="text-xl font-semibold mb-4 dark:text-gray-200">Vercel Blob Upload Test</h2>
-          <Button onClick={handleBlobUploadTest} disabled={blobTestLoading} className="dark:bg-green-600 dark:hover:bg-green-700 dark:text-white">
-            {blobTestLoading ? 'Lädt hoch...' : 'Testdatei hochladen'}
-          </Button>
-          {blobTestResult && (
-            <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-              <p className="text-sm text-gray-700 dark:text-gray-200">Ergebnis:</p>
-              <a 
-                href={blobTestResult.startsWith('Error:') ? '#' : blobTestResult} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className={`text-sm whitespace-pre-wrap ${blobTestResult.startsWith('Error:') ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400 underline'}`}
-              >
-                {blobTestResult}
-              </a>
-            </div>
-          )}
         </div>
 
         {/* PDF Preview Section */} 
@@ -528,6 +492,14 @@ export default function Page() {
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           {pdfGeneratingItemId === item.id ? "Generiere PDF..." : "PDF generieren"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handlePreviewPdf(item.pdfUrl)}
+                          disabled={!item.pdfUrl || pdfGeneratingItemId === item.id}
+                          className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          PDF Vorschau
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isLoading || item.status === 'Genehmigt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
                           <Check className="mr-2 h-4 w-4" />
