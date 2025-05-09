@@ -439,8 +439,8 @@ export default function HeizungsplaketteMaske() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm" role="banner">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card shadow-sm" role="banner">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" aria-label="Go to homepage">
             <Image src="/images/heizungsplakette-logo.png" alt="Heizungsplakette Logo" width={250} height={50} />
@@ -449,7 +449,7 @@ export default function HeizungsplaketteMaske() {
       </header>
 
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="bg-card shadow-md rounded-lg p-6">
           <h1 className="sr-only">Heizungsplakette Antragsformular</h1>
 
           <nav aria-label="Fortschritt">
