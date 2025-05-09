@@ -97,6 +97,7 @@ export default function Page() {
   const [pdfGeneratingItemId, setPdfGeneratingItemId] = useState<number | null>(null);
   const [blobTestLoading, setBlobTestLoading] = useState(false);
   const [blobTestResult, setBlobTestResult] = useState<string | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -257,6 +258,7 @@ export default function Page() {
 
   const handleGeneratePdf = async (itemId: number) => {
     setPdfGeneratingItemId(itemId);
+    setPdfPreviewUrl(null);
     try {
       const apiUrl = `/api/create_pdf?id=${itemId.toString()}`;
       const response = await fetch(apiUrl);
@@ -301,6 +303,7 @@ export default function Page() {
         title: "PDF Generiert & Hochgeladen",
         description: `PDF erfolgreich erstellt und zu Vercel Blob hochgeladen: ${newBlobResult.url}`,
       });
+      setPdfPreviewUrl(newBlobResult.url);
 
     } catch (error: unknown) {
       let errorMessage = "Fehler bei der PDF-Generierung oder dem Upload.";
@@ -314,7 +317,7 @@ export default function Page() {
         variant: "destructive",
       });
     } finally {
-      setPdfGeneratingItemId(null); // Reset UI feedback
+      setPdfGeneratingItemId(null);
     }
   };
 
@@ -429,6 +432,27 @@ export default function Page() {
             </div>
           )}
         </div>
+
+        {/* PDF Preview Section */} 
+        {pdfPreviewUrl && (
+          <div className="mt-6 mb-6 p-4 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-semibold dark:text-gray-200">PDF Vorschau</h2>
+              <Button variant="outline" onClick={() => setPdfPreviewUrl(null)} className="dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+                Vorschau schließen
+              </Button>
+            </div>
+            <div style={{ width: '100%', height: '700px', border: '1px solid #ccc' }}>
+              <iframe
+                src={pdfPreviewUrl}
+                width="100%"
+                height="100%"
+                style={{ border: 'none' }}
+                title="PDF Preview"
+              ></iframe>
+            </div>
+          </div>
+        )}
 
         <div className="border rounded-md overflow-x-auto bg-white dark:bg-gray-800 shadow">
           <Table>
