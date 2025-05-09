@@ -264,19 +264,15 @@ export default function Page() {
       if (!response.ok) {
         let errorBody = `HTTP error ${response.status} (${response.statusText}) while fetching PDF from Python backend.`;
         try {
-          // Try to get more specific error from the Python script if it sent JSON
           const errorJson = await response.json(); 
           if (errorJson && errorJson.error) {
             errorBody = `PDF Generation Error (from Python): ${errorJson.error}`;
           } else {
-            // Fallback if error response wasn't JSON or didn't have .error
              const text = await response.text(); 
              errorBody = text || errorBody; 
           }
         } catch (parseError) { 
-            // If parsing the error response fails, stick to the original errorBody
             console.warn("Could not parse error response from /api/create_pdf", parseError);
-            // Try to get raw text if JSON parsing failed
             try { 
                 const text = await response.text();
                 errorBody = text || errorBody;
@@ -285,24 +281,26 @@ export default function Page() {
         throw new Error(`${errorBody}`);
       }
 
-      const pdfBlob = await response.blob(); // Get the PDF data as a Blob
-      // Ensure the filename doesn't have problematic characters for a URL path or blob storage
-      const safeTimestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `heizungsplakette-${itemId}-${safeTimestamp}.pdf`;
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const pdfBlob = await response.blob(); 
+      
+      // Define the desired path and filename in the blob store
+      const blobPathname = `pdfs/heizungsplakette-${itemId}.pdf`;
+      // The File object itself can have a simpler name, its blobPathname that matters for storage location
+      const localFileNameForFileObject = `heizungsplakette-${itemId}.pdf`;
+
+      const pdfFile = new File([pdfBlob], localFileNameForFileObject, { type: 'application/pdf' });
 
       // Now upload this PDF file to Vercel Blob using the Next.js handler
-      const newBlobResult = await upload(pdfFile.name, pdfFile, {
+      // The first argument to upload() is the full path in the blob store
+      const newBlobResult = await upload(blobPathname, pdfFile, {
         access: 'public',
-        handleUploadUrl: '/api/blob-upload', // Our existing Next.js blob upload handler
+        handleUploadUrl: '/api/blob-upload', 
       });
 
       toast({
         title: "PDF Generiert & Hochgeladen",
         description: `PDF erfolgreich erstellt und zu Vercel Blob hochgeladen: ${newBlobResult.url}`,
       });
-      // Optionally, you might want to store or display newBlobResult.url
-      // e.g., update the heizungsplaketten state if you add a pdfUrl field to your data model
 
     } catch (error: unknown) {
       let errorMessage = "Fehler bei der PDF-Generierung oder dem Upload.";
