@@ -3,7 +3,8 @@ import { PrismaClient, Prisma } from '@prisma/client'; // Import Prisma for erro
 
 const prisma = new PrismaClient();
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// Temporarily changed from PUT to POST for diagnostics
+export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
     const { pdfUrl } = await request.json();
@@ -22,9 +23,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       data: { pdfUrl: pdfUrl },
     });
 
+    console.log(`Successfully updated pdfUrl for ${id}`); // Added success log
     return NextResponse.json(updatedPlakette);
   } catch (e: unknown) { // Explicitly type e as unknown
-    console.error('Error updating pdfUrl:', e);
+    console.error(`Error updating pdfUrl for ${params?.id || 'unknown ID'}:`, e); // Log with ID if available
     let errorMessage = 'Failed to update PDF URL';
     let statusCode = 500;
 

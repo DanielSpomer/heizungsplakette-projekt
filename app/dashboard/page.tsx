@@ -307,7 +307,7 @@ export default function Page() {
       if (newBlobResult && newBlobResult.url) {
         try {
           const updateResponse = await fetch(`/api/heizungsplakette/${itemId}/update-pdf-url`, {
-            method: 'PUT',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pdfUrl: newBlobResult.url }),
           });
