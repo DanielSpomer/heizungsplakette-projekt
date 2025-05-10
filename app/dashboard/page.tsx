@@ -336,13 +336,13 @@ export default function Page() {
               prevPlaketten.map(p => 
                 // Ensure consistent ID type for comparison (string vs number)
                 String(p.id) === recordIdString ? { ...p, pdfUrl: newBlobResult.url } : p
-              )
-            );
-            setPdfPreviewUrl(newBlobResult.url); // Show preview
-            toast({
+            )
+          );
+          setPdfPreviewUrl(newBlobResult.url); // Show preview
+          toast({
               title: "PDF Generiert & Gespeichert",
               description: `PDF erfolgreich erstellt, hochgeladen und URL in DB gespeichert: ${newBlobResult.url}`,
-            });
+          });
           }
         } catch (dbError: unknown) {
           console.error('Error during API call to /api/update-record-pdf:', dbError);

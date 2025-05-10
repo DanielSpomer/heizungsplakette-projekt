@@ -113,6 +113,9 @@ export default function HeizungsplaketteMaske() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [addressValidationMessage, setAddressValidationMessage] = useState<string | null>(null)
   const [herkunft, setHerkunft] = useState<string>("Heizungsplakette")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     // Check if we're running in a browser environment
@@ -338,89 +341,81 @@ export default function HeizungsplaketteMaske() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const isValid = validateStep(currentStep)
-    if (isValid) {
-      if (currentStep === 4) {
-        const isAddressValid = await validateAddress()
-        if (!isAddressValid) return
-        if (currentStep === 4 && isAddressValid) {
-          setFormData((prev) => ({
-            ...prev,
-            personStrasse: prev.strasse,
-            personHausnummer: prev.hausnummer,
-            personPostleitzahl: prev.postleitzahl,
-            personOrt: prev.ort,
-          }))
-        }
-      }
-      if (currentStep < 7) {
-        setCurrentStep((prev) => prev + 1)
-        setVisitedSteps((prev) => Array.from(new Set([...prev, currentStep + 1])))
-      } else {
-        try {
-          const dataToSend = {
-            ...formData,
-            herkunft: herkunft, // Include herkunft in the form data
-            baujahr: Number.parseInt(formData.baujahr, 10),
-            verzichtAufHeizungsanlageFotos: !!formData.verzichtAufHeizungsanlageFotos,
-            verzichtAufHeizungsetiketteFotos: !!formData.verzichtAufHeizungsetiketteFotos,
-            verzichtAufHeizungslabelFotos: !!formData.verzichtAufHeizungslabelFotos,
-            verzichtAufBedienungsanleitungFotos: !!formData.verzichtAufBedienungsanleitungFotos,
-          }
+    if (!validateStep(currentStep)) return
 
-          const convertFilesToNames = (files: File[]): string[] => files.map((file) => file.name)
+    if (currentStep < 4) {
+      setCurrentStep((prev) => prev + 1)
+      return
+    }
 
-          const apiData = {
-            ...dataToSend,
-            heizungsanlageFotos: convertFilesToNames(dataToSend.heizungsanlageFotos),
-            heizungsetiketteFotos: convertFilesToNames(dataToSend.heizungsetiketteFotos),
-            heizungslabelFotos: convertFilesToNames(dataToSend.heizungslabelFotos),
-            bedienungsanleitungFotos: convertFilesToNames(dataToSend.bedienungsanleitungFotos),
-          }
+    setIsSubmitting(true)
+    setSubmitError(null)
 
-          const response = await fetch('/api/heizungsplakette', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(apiData),
-          });
-      
-          if (response.ok) {
-            const result = await response.json();
-            console.log('Heizungsplakette-Daten erfolgreich gespeichert:', result);
-      
-            // Send email after successful data save
-            const emailResponse = await fetch('/api/send-email', {
+    try {
+      // Upload images to Vercel Blob Storage
+      const uploadPromises: Promise<string>[] = []
+      const imageFields = [
+        'heizungsanlageFotos',
+        'heizungsetiketteFotos',
+        'heizungslabelFotos',
+        'bedienungsanleitungFotos'
+      ] as const
+
+      for (const field of imageFields) {
+        const files = formData[field]
+        if (files && files.length > 0) {
+          for (const file of files) {
+            const uploadFormData = new FormData()
+            uploadFormData.append('file', file)
+            
+            const response = await fetch('/api/upload-image', {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                ...apiData,
-                id: result.id, // Include the ID from the saved data
-              }),
-            });
-      
-            if (emailResponse.ok) {
-              const emailResult = await emailResponse.json();
-              console.log('E-Mail erfolgreich gesendet:', emailResult);
-              router.push(`/confirmation?id=${result.id}`);
-            } else {
-              console.error('Fehler beim Senden der E-Mail');
-              // Here you could display an error message to the user about email sending failure
-              // but still redirect them to the confirmation page
-              router.push(`/confirmation?id=${result.id}&emailError=true`);
+              body: uploadFormData,
+            })
+            
+            if (!response.ok) {
+              throw new Error(`Failed to upload ${file.name}`)
             }
-          } else {
-            console.error('Fehler beim Speichern der Heizungsplakette-Daten');
-            // Here you could display an error message to the user
+            
+            const data = await response.json()
+            uploadPromises.push(Promise.resolve(data.url))
           }
-        } catch (error) {
-          console.error('Fehler beim Speichern der Heizungsplakette-Daten oder Senden der E-Mail:', error);
-          // Here you could display an error message to the user
         }
       }
+
+      // Wait for all uploads to complete
+      const uploadedUrls = await Promise.all(uploadPromises)
+
+      // Prepare form data with uploaded URLs
+      const formDataToSubmit = {
+        ...formData,
+        heizungsanlageFotos: uploadedUrls.filter((_, i) => i < formData.heizungsanlageFotos.length),
+        heizungsetiketteFotos: uploadedUrls.filter((_, i) => i < formData.heizungsetiketteFotos.length),
+        heizungslabelFotos: uploadedUrls.filter((_, i) => i < formData.heizungslabelFotos.length),
+        bedienungsanleitungFotos: uploadedUrls.filter((_, i) => i < formData.bedienungsanleitungFotos.length),
+      }
+
+      // Submit form data
+      const response = await fetch("/api/heizungsplakette", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formDataToSubmit),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to submit form")
+      }
+
+      const data = await response.json()
+      setOrderId(data.id)
+      setCurrentStep(5)
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      setSubmitError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
