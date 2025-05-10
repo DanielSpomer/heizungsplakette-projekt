@@ -343,8 +343,24 @@ export default function HeizungsplaketteMaske() {
     e.preventDefault()
     if (!validateStep(currentStep)) return
 
-    if (currentStep < 4) {
+    if (currentStep < 7) {
+      // If moving from step 4 to 5, copy the address
+      if (currentStep === 4) {
+        setFormData(prev => ({
+          ...prev,
+          personStrasse: prev.strasse,
+          personHausnummer: prev.hausnummer,
+          personPostleitzahl: prev.postleitzahl,
+          personOrt: prev.ort,
+        }))
+      }
       setCurrentStep((prev) => prev + 1)
+      setVisitedSteps((prev) => Array.from(new Set([...prev, currentStep + 1])))
+      return
+    }
+
+    // Prevent multiple submissions
+    if (isSubmitting) {
       return
     }
 
@@ -411,6 +427,27 @@ export default function HeizungsplaketteMaske() {
       const data = await response.json()
       setOrderId(data.id)
       setCurrentStep(5)
+      
+      // Send email after successful data save
+      const emailResponse = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formDataToSubmit,
+          id: data.id,
+        }),
+      });
+
+      if (emailResponse.ok) {
+        const emailResult = await emailResponse.json();
+        console.log('E-Mail erfolgreich gesendet:', emailResult);
+        router.push(`/confirmation?id=${data.id}`);
+      } else {
+        console.error('Fehler beim Senden der E-Mail');
+        router.push(`/confirmation?id=${data.id}&emailError=true`);
+      }
     } catch (error) {
       console.error("Error submitting form:", error)
       setSubmitError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")

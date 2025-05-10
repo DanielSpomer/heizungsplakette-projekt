@@ -14,8 +14,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate a unique filename
-    const filename = `${nanoid()}-${file.name}`;
+    // Generate a unique filename and store in images folder
+    const filename = `images/${nanoid()}-${file.name}`;
     
     // Upload to Vercel Blob Storage
     const blob = await put(filename, file, {
