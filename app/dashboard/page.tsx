@@ -368,7 +368,7 @@ export default function Page() {
                 // Ensure consistent ID type for comparison (string vs number)
                 String(p.id) === recordIdString ? { ...p, pdfUrl: newBlobResult.url } : p
             ));
-            setPdfPreviewUrl(newBlobResult.url);
+            setPdfPreviewUrl(`${newBlobResult.url}?t=${Date.now()}`);
             toast({ 
               title: 'PDF neu generiert', 
               description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
@@ -553,7 +553,7 @@ export default function Page() {
         if (!pdfAvailable) await delay(1500);
       }
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
-      setPdfPreviewUrl(newBlobResult.url);
+      setPdfPreviewUrl(`${newBlobResult.url}?t=${Date.now()}`);
       toast({ 
         title: 'PDF neu generiert', 
         description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
@@ -632,7 +632,7 @@ export default function Page() {
               </DialogHeader>
               {pdfPreviewUrl && (
                 <iframe
-                  src={pdfPreviewUrl}
+                  src={`${pdfPreviewUrl}?t=${Date.now()}`}
                   width="100%"
                   height="900"
                   style={{ border: 'none', minHeight: 700 }}
