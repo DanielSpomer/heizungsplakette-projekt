@@ -310,16 +310,13 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
                     ratio = 180 / height  # Scale to 180px height
                     img_w = int(width * ratio)
                     img_h = 180
-                    
-            x_pos = A4[0] / 2 - img_w / 2
-            y_pos = y_top - j * (img_h + 60) 
-                    
+                    x_pos = A4[0] / 2 - img_w / 2
+                    y_pos = y_top - j * (img_h + 60)
                     print(f"DEBUG: Image dimensions - Original: {width}x{height}, Scaled: {img_w}x{img_h}")
                     print(f"DEBUG: Image position - x: {x_pos}, y: {y_pos}")
-                    
                     # Reset the BytesIO position before adding to fields
                     img_data.seek(0)
-            fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
+                    fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
                     fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
                     print(f"DEBUG: Successfully added image to page {page_idx}")
                 else:
@@ -332,11 +329,11 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     # Add only the required number of pages
     for i in range(num_pages):
         if i < len(template_reader.pages):
-        page = template_reader.pages[i]
-        if i in fields:
-            overlay = create_overlay(fields[i])
-            page.merge_page(overlay.pages[0])
-        writer.add_page(page)
+            page = template_reader.pages[i]
+            if i in fields:
+                overlay = create_overlay(fields[i])
+                page.merge_page(overlay.pages[0])
+            writer.add_page(page)
 
     pdf_buffer = BytesIO()
     writer.write(pdf_buffer)
