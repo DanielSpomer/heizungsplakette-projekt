@@ -34,10 +34,11 @@ export async function POST(request: Request): Promise<NextResponse> {
           'x-api-version': '6',
         },
       });
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404 && res.status !== 405) {
         const text = await res.text();
         return NextResponse.json({ error: `Old blob delete failed: ${text}` }, { status: res.status });
       }
+      // If 404 or 405, treat as success (idempotent delete)
     } catch (error) {
       return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error deleting old blob') }, { status: 500 });
     }
