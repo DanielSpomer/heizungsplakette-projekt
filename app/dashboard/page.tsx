@@ -442,25 +442,24 @@ export default function Page() {
         </div>
 
         {/* PDF Preview Section */} 
-        {pdfPreviewUrl && (
-          <div className="mt-6 mb-8 p-6 border rounded-2xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm dark:border-gray-700 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold dark:text-gray-200">PDF Vorschau</h2>
-              <Button variant="ghost" onClick={() => setPdfPreviewUrl(null)} className="dark:text-gray-300 dark:hover:bg-gray-700/50">
-                Vorschau schließen
-              </Button>
-            </div>
-            <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-              <iframe
-                src={pdfPreviewUrl}
-                width="100%"
-                height="700"
-                style={{ border: 'none' }}
-                title="PDF Preview"
-              />
-            </div>
-          </div>
-        )}
+        <Dialog open={!!pdfPreviewUrl} onOpenChange={(open) => !open && setPdfPreviewUrl(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
+            <DialogHeader>
+              <DialogTitle className="dark:text-gray-200">PDF Vorschau</DialogTitle>
+            </DialogHeader>
+            {pdfPreviewUrl && (
+              <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <iframe
+                  src={pdfPreviewUrl}
+                  width="100%"
+                  height="700"
+                  style={{ border: 'none' }}
+                  title="PDF Preview"
+                />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <div className="border rounded-2xl overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
           <Table>
@@ -532,7 +531,7 @@ export default function Page() {
                           Beobachten
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleGeneratePdf(item.id)} 
+                          onClick={() => handleGeneratePdf(item.id)}
                           disabled={pdfGeneratingItemId === item.id || !!item.pdfUrl}
                           className="dark:text-gray-300 dark:hover:bg-gray-700/50"
                         >
@@ -541,9 +540,9 @@ export default function Page() {
                         </DropdownMenuItem>
                         {item.pdfUrl && (
                           <DropdownMenuItem onClick={() => handlePreviewPdf(item.pdfUrl)} className="dark:text-gray-300 dark:hover:bg-gray-700/50">
-                            <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="mr-2 h-4 w-4" />
                             PDF anzeigen
-                          </DropdownMenuItem>
+                        </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
