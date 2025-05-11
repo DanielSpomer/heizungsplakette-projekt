@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { upload } from '@vercel/blob/client'
 import React from 'react'
+import './pdf-scrollbar.css'
 
 type HeizungsplaketteItem = {
   id: number;
@@ -543,7 +544,7 @@ export default function Page() {
         {/* PDF Preview Section */} 
         <Dialog open={!!pdfPreviewUrl} onOpenChange={(open) => !open && setPdfPreviewUrl(null)}>
           <DialogContent className="max-w-6xl max-h-[90vh] p-0 flex flex-row overflow-hidden dark:bg-gray-800 dark:border-gray-700">
-            <div className="flex-1 min-w-0 max-h-[90vh] overflow-auto p-8 bg-white dark:bg-gray-900">
+            <div className="flex-1 min-w-0 max-h-[90vh] overflow-auto p-8 bg-white dark:bg-gray-900 pdf-preview-scroll">
               <DialogHeader>
                 <DialogTitle className="dark:text-gray-200 mb-4">PDF Vorschau</DialogTitle>
               </DialogHeader>
@@ -557,7 +558,7 @@ export default function Page() {
                 />
               )}
             </div>
-            <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4">
+            <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4 pdf-rotation-scroll">
               {(function() {
                 const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl) || heizungsplaketten.find(p => String(p.id) === String(pdfPreviewUrl?.split('-')[1]));
                 if (!item) return null;
