@@ -297,24 +297,16 @@ export default function Page() {
       
       // Find the item for the given itemId
       const item = heizungsplaketten.find(p => String(p.id) === String(itemId));
+      const oldUrl = item?.pdfUrl || '';
       // Define the desired path and filename in the blob store
       const blobPathname = `pdfs/heizungsplakette-${itemId}.pdf`;
       const localFileNameForFileObject = `heizungsplakette-${itemId}.pdf`;
       const pdfFile = new File([pdfBlob], localFileNameForFileObject, { type: 'application/pdf' });
 
       // Upload new PDF to Vercel Blob, pass oldUrl for deletion
-      console.log('Sending PDF to blob upload...');
-      console.log('itemId:', itemId);
-      console.log('oldUrl:', item?.pdfUrl);
-      console.log('pathname:', blobPathname);
       const formData = new FormData();
       formData.append('file', pdfFile);
-      const previousPdfUrl = heizungsplaketten.find(p => String(p.id) === String(itemId))?.pdfUrl;
-      console.log('✅ Using previousPdfUrl fallback:', previousPdfUrl);
-
-      if (previousPdfUrl) {
-        formData.append('oldUrl', previousPdfUrl);
-      }
+      formData.append('oldUrl', oldUrl);
       formData.append('pathname', blobPathname);
       formData.append('itemId', String(itemId));
       const blobUploadResponse = await fetch('/api/blob-upload', {
@@ -436,8 +428,10 @@ export default function Page() {
       // Use the same blob name as the original for regeneration
       const blobPathname = `pdfs/heizungsplakette-${item.id}.pdf`;
       const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}.pdf`, { type: 'application/pdf' });
+      const oldUrl = item.pdfUrl || '';
       const formData = new FormData();
       formData.append('file', pdfFile);
+      formData.append('oldUrl', oldUrl);
       formData.append('pathname', blobPathname);
       formData.append('itemId', String(item.id));
       let blobUploadResponse;
