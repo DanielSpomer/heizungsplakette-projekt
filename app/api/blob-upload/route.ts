@@ -5,7 +5,8 @@ import { deleteBlobByUrl } from '@/lib/deleteBlob';
 // import { auth } from '@clerk/nextjs'; // Example for authentication
 
 export async function POST(request: Request): Promise<NextResponse> {
-  // Parse multipart/form-data
+  console.log('⏳ Received POST request for blob upload');
+
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
   const oldUrl = formData.get('oldUrl') as string | null;
@@ -13,41 +14,49 @@ export async function POST(request: Request): Promise<NextResponse> {
   const itemId = formData.get('itemId') as string | null;
 
   if (!file || !pathname) {
+    console.warn('⚠️ Missing file or pathname');
     return NextResponse.json({ error: 'Missing file or pathname' }, { status: 400 });
   }
 
-  // Always use a unique filename for new PDFs
   if (itemId) {
     const timestamp = Date.now();
     pathname = `pdfs/heizungsplakette-${itemId}-${timestamp}.pdf`;
+    console.log(`📄 Generated unique pathname: ${pathname}`);
   }
 
   let blob;
   try {
-    // Upload the new file with the unique filename
+    console.log('📤 Uploading new blob...');
     blob = await put(pathname, file, { access: 'public', allowOverwrite: false });
+    console.log(`✅ Upload successful: ${blob.url}`);
 
-    // Always update the database with the new PDF URL if itemId is provided
     if (itemId) {
       try {
+        console.log(`📝 Updating database for itemId=${itemId}`);
         await sql`
           UPDATE "Heizungsplakette"
           SET "pdfUrl" = ${blob.url}
           WHERE id = ${itemId}
         `;
+        console.log('✅ Database updated successfully');
       } catch (dbError) {
-        console.error('Error updating database with PDF URL:', dbError);
-        // Don't fail the whole request if DB update fails
+        console.error('❌ Error updating database with PDF URL:', dbError);
       }
     }
   } catch (error) {
+    console.error('❌ Error during upload:', error);
     return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error uploading blob') }, { status: 500 });
   }
 
-  // Try to delete the old blob using the Vercel Blob SDK's del function
   if (oldUrl) {
-    await deleteBlobByUrl(oldUrl); 
+    try {
+      console.log(`🗑️ Attempting to delete old blob: ${oldUrl}`);
+      await deleteBlobByUrl(oldUrl);
+      console.log('✅ Old blob deleted');
+    } catch (deleteError) {
+      console.warn('⚠️ Failed to delete old blob:', deleteError);
+    }
   }
 
   return NextResponse.json(blob);
-} 
+}
