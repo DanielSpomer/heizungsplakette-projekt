@@ -30,20 +30,20 @@ TEST_MODE = False # Tkinter GUI and local file opening will be disabled
 def safe_split(value):
     if value is None:
         return []
-    if isinstance(value, list): # Check for list before pd.isna
-        # If it's already a list, process its elements (assuming they are strings or can be stringified)
+    if isinstance(value, list):
         return [str(v).strip() for v in value if str(v).strip().lower() != "nan"]
-    
-    # Now pd.isna should be safer as it's less likely to receive a raw Python list here
-    # It's primarily for scalar, Series, or DataFrame inputs. 
-    # If 'value' is a scalar that pd.isna handles, it's fine.
-    if pd.isna(value): 
+    if pd.isna(value):
         return []
-    
     if isinstance(value, str):
-        # If it's a string, split and process
+        # Try to parse as JSON array first
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return [str(v).strip() for v in parsed if str(v).strip().lower() != "nan"]
+        except json.JSONDecodeError:
+            pass
+        # If not JSON, try comma splitting
         return [v.strip() for v in value.split(',') if v.strip().lower() != "nan"]
-    
     print(f"⚠️ safe_split received unexpected type for value: {type(value)}, value: {value}")
     return []
 
@@ -222,7 +222,9 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     img_sources = []
     def add_imgs(key_name, label):
         print(f"DEBUG: add_imgs for {key_name}, raw value: {row_data.get(key_name)}")
-        for url in safe_split(row_data.get(key_name)):
+        urls = safe_split(row_data.get(key_name))
+        print(f"DEBUG: Parsed URLs for {key_name}: {urls}")
+        for url in urls:
             if url and url.startswith('http'):  # Only add valid URLs
                 img_sources.append((url, label))
 
@@ -287,6 +289,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
         y_top = 460
         for j, (url, label) in enumerate(group):
             try:
+                print(f"DEBUG: Processing image URL: {url}")
                 # Download image from URL
                 response = requests.get(url)
                 if response.status_code == 200:
@@ -302,8 +305,13 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
                     
                     fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
                     fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
+                    print(f"DEBUG: Successfully added image to page {page_idx}")
+                else:
+                    print(f"⚠️ Failed to download image from {url}. Status code: {response.status_code}")
             except Exception as e:
                 print(f"⚠️ Error processing image {url}: {e}")
+                import traceback
+                print(traceback.format_exc())
 
     # Add only the required number of pages
     for i in range(num_pages):
