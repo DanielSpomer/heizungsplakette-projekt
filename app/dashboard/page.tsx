@@ -319,78 +319,28 @@ export default function Page() {
       const newBlobResult = await blobUploadResponse.json();
       // newBlobResult.url should be the new PDF URL
 
-      // --- Save PDF URL to Database using the new static route ---
-      if (newBlobResult && newBlobResult.url) {
+      // Retry logic for blob propagation
+      let pdfAvailable = false;
+      let tries = 0;
+      const maxTries = 3;
+      const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+      while (!pdfAvailable && tries < maxTries) {
         try {
-          // Convert itemId to string if it's not already, as the API expects a string ID (CUID)
-          const recordIdString = String(itemId); 
-
-          const updateResponse = await fetch('/api/update-record-pdf', { // New static API route
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: recordIdString, pdfUrl: newBlobResult.url }), // Send id in body
-          });
-
-          if (!updateResponse.ok) {
-            const errorData = await updateResponse.json().catch(() => ({ error: "Failed to parse error response from update-record-pdf" }));
-            const errorMessage = errorData.error || updateResponse.statusText || "Unbekannter Fehler beim Speichern der PDF URL";
-            console.error('Failed to save PDF URL to database via /api/update-record-pdf:', errorMessage);
-            toast({
-              title: "Speicherfehler DB",
-              description: `PDF URL konnte nicht in DB gespeichert werden: ${errorMessage}`,
-              variant: "destructive",
-            });
-            // Decide if you want to proceed with UI update if DB save fails, 
-            // or perhaps revert the blob upload if critical.
-            // For now, we will NOT update the UI if DB save fails.
-          } else {
-            const updatedRecord = await updateResponse.json();
-            console.log('PDF URL successfully saved to database via /api/update-record-pdf, record:', updatedRecord);
-            
-            // Update local state and preview with retry logic for blob propagation
-            let pdfAvailable = false;
-            let tries = 0;
-            const maxTries = 3;
-            const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-            while (!pdfAvailable && tries < maxTries) {
-              try {
-                const headResp = await fetch(newBlobResult.url, { method: 'HEAD' });
-                if (headResp.ok) {
-                  pdfAvailable = true;
-                  break;
-                }
-              } catch (e) {}
-              tries++;
-              if (!pdfAvailable) await delay(1500);
-            }
-            setHeizungsplaketten(prev => 
-              prev.map(p => 
-                // Ensure consistent ID type for comparison (string vs number)
-                String(p.id) === recordIdString ? { ...p, pdfUrl: newBlobResult.url } : p
-            ));
-            setPdfPreviewUrl(`${newBlobResult.url}?t=${Date.now()}`);
-            toast({ 
-              title: 'PDF neu generiert', 
-              description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
-            });
+          const headResp = await fetch(newBlobResult.url, { method: 'HEAD' });
+          if (headResp.ok) {
+            pdfAvailable = true;
+            break;
           }
-        } catch (dbError: unknown) {
-          console.error('Error during API call to /api/update-record-pdf:', dbError);
-          let dbErrorMessage = "Unbekannter Fehler beim Speichern der PDF URL via API.";
-          if (dbError instanceof Error) {
-            dbErrorMessage = dbError.message;
-          }
-          toast({
-              title: "API Fehler DB",
-              description: dbErrorMessage,
-              variant: "destructive",
-            });
-        }
-      } else {
-        throw new Error("Blob upload succeeded but no URL was returned.");
+        } catch (e) {}
+        tries++;
+        if (!pdfAvailable) await delay(1500);
       }
-      // --- End Save PDF URL to Database ---
-
+      setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
+      setPdfPreviewUrl(newBlobResult.url);
+      toast({ 
+        title: 'PDF neu generiert', 
+        description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
+      });
     } catch (error: unknown) {
       let errorMessage = "Fehler bei der PDF-Generierung oder dem Upload.";
       if (error instanceof Error) {
@@ -506,36 +456,6 @@ export default function Page() {
       const newBlobResult = await blobUploadResponse.json();
       // newBlobResult.url should be the new PDF URL
 
-      // Update DB with new PDF URL
-      let updateResponse;
-      try {
-        updateResponse = await fetch('/api/update-record-pdf', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: String(item.id), pdfUrl: newBlobResult.url }),
-        });
-      } catch (dbErr) {
-        console.error('DB update failed:', dbErr);
-        toast({
-          title: 'Fehler',
-          description: 'Fehler beim Aktualisieren der PDF-URL in der Datenbank.',
-          variant: 'destructive',
-        });
-        setRegeneratingPdf(false);
-        return;
-      }
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json().catch(() => ({ error: 'Unknown error updating DB' }));
-        console.error('DB update error:', errorData);
-        toast({
-          title: 'Fehler',
-          description: errorData.error || 'Fehler beim Aktualisieren der PDF-URL in der Datenbank.',
-          variant: 'destructive',
-        });
-        setRegeneratingPdf(false);
-        return;
-      }
-
       // Retry logic for blob propagation
       let pdfAvailable = false;
       let tries = 0;
@@ -553,7 +473,7 @@ export default function Page() {
         if (!pdfAvailable) await delay(1500);
       }
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
-      setPdfPreviewUrl(`${newBlobResult.url}?t=${Date.now()}`);
+      setPdfPreviewUrl(newBlobResult.url);
       toast({ 
         title: 'PDF neu generiert', 
         description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
@@ -632,7 +552,7 @@ export default function Page() {
               </DialogHeader>
               {pdfPreviewUrl && (
                 <iframe
-                  src={`${pdfPreviewUrl}?t=${Date.now()}`}
+                  src={pdfPreviewUrl}
                   width="100%"
                   height="900"
                   style={{ border: 'none', minHeight: 700 }}

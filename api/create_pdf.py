@@ -503,13 +503,17 @@ def rotate_image(image_data, rotation_degrees):
     """Rotate an image by specified degrees (clockwise)."""
     try:
         img = Image.open(image_data)
+        # Convert to RGB if necessary (for PNG with transparency)
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            img = img.convert('RGB')
         rotated_img = img.rotate(-rotation_degrees, expand=True)  # Negative for clockwise
         output = BytesIO()
-        rotated_img.save(output, format='JPEG')
+        rotated_img.save(output, format='JPEG', quality=95)
         output.seek(0)
         return output
     except Exception as e:
         print(f"⚠️ Error rotating image: {e}")
+        print(f"Traceback:\n{traceback.format_exc()}")
         return image_data
 
 def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
@@ -518,6 +522,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
     image_rotations: dict of image URLs and their rotation degrees (90, 180, 270)
     """
     try:
+        print(f"DEBUG: Starting PDF recreation for ID {item_id} with rotations: {image_rotations}")
         # Fetch the original data
         data = fetch_heizungsplakette_data(item_id)
         if not data:
@@ -529,8 +534,8 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
             urls = safe_split(data.get(key_name))
             for url in urls:
                 if url and url.startswith('http'):
-                    print(f"[DEBUG] Processing image for rotation: {url} | rotation: {image_rotations.get(url, 0) if image_rotations else 0}")
                     rotation = image_rotations.get(url, 0) if image_rotations else 0
+                    print(f"DEBUG: Adding image {url} with rotation {rotation}°")
                     img_sources.append((url, label, rotation))
 
         add_imgs_with_rotation("heizungsanlageFotos", "Foto zur Heizungsanlage")
@@ -588,6 +593,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                 (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
             ]
         }
+
         for i, group in enumerate(img_groups):
             page_idx = i + 2
             if page_idx >= num_pages:
@@ -599,10 +605,12 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
             y_top = 460
             for j, (url, label, rotation) in enumerate(group):
                 try:
+                    print(f"DEBUG: Processing image {url} with rotation {rotation}°")
                     response = requests.get(url)
                     if response.status_code == 200:
                         img_data = BytesIO(response.content)
                         if rotation != 0:
+                            print(f"DEBUG: Rotating image {url} by {rotation}°")
                             img_data = rotate_image(img_data, rotation)
                         img = Image.open(img_data)
                         width, height = img.size
@@ -614,8 +622,13 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                         img_data.seek(0)
                         fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
                         fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
+                        print(f"DEBUG: Successfully added rotated image to page {page_idx}")
+                    else:
+                        print(f"⚠️ Failed to download image from {url}. Status code: {response.status_code}")
                 except Exception as e:
                     print(f"⚠️ Error processing image {url}: {e}")
+                    print(f"Traceback:\n{traceback.format_exc()}")
+
         for i in range(num_pages):
             if i < len(template_reader.pages):
                 page = template_reader.pages[i]
@@ -623,11 +636,14 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                     overlay = create_overlay(fields[i])
                     page.merge_page(overlay.pages[0])
                 writer.add_page(page)
+
         pdf_buffer = BytesIO()
         writer.write(pdf_buffer)
         pdf_bytes = pdf_buffer.getvalue()
         pdf_buffer.close()
+        print(f"DEBUG: Successfully generated PDF with rotations for ID {item_id}")
         return pdf_bytes
     except Exception as e:
         print(f"⚠️ Error recreating PDF: {e}")
+        print(f"Traceback:\n{traceback.format_exc()}")
         raise
