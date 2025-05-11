@@ -538,7 +538,7 @@ export default function Page() {
                 return getAllImagesForPreview().map(({ url, label }, idx) => (
                   <div key={url} className="border p-2 rounded mb-2">
                     <div className="font-semibold mb-1">{label} {idx + 1}</div>
-                    <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" />
+                    <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }} />
                     <div className="flex gap-2 justify-between">
                       {[0, 90, 180, 270].map(deg => (
                         <Button

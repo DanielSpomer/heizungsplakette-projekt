@@ -503,10 +503,10 @@ if __name__ == "__main__":
 
 # Add after the scale_image function
 def rotate_image(image_data, rotation_degrees):
-    """Rotate an image by specified degrees."""
+    """Rotate an image by specified degrees (clockwise)."""
     try:
         img = Image.open(image_data)
-        rotated_img = img.rotate(rotation_degrees, expand=True)
+        rotated_img = img.rotate(-rotation_degrees, expand=True)  # Negative for clockwise
         output = BytesIO()
         rotated_img.save(output, format='JPEG')
         output.seek(0)
@@ -544,71 +544,81 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
         # Generate PDF with rotated images
         script_dir = os.path.dirname(__file__)
         template_path = os.path.join(script_dir, "template_blanco.pdf")
-        
-        # Register fonts
         font_base_path = os.path.join(script_dir, "fonts")
         montserrat_regular_path = os.path.join(font_base_path, "Montserrat-Regular.ttf")
         montserrat_bold_path = os.path.join(font_base_path, "Montserrat-Bold.ttf")
         pdfmetrics.registerFont(TTFont('Montserrat', montserrat_regular_path))
         pdfmetrics.registerFont(TTFont('Montserrat-Bold', montserrat_bold_path))
-
         template_reader = PdfReader(template_path)
         writer = PdfWriter()
 
-        # Create fields dictionary with rotated images
+        name = f"{data.get('vorname', '')} {data.get('nachname', '')}"
+        energy_date = parse_date(data.get('energieausweisDate')) if data.get('energieausweis') == 'Ja' else ""
+        efh = 'Ja' if data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
+        central = 'Ja' if data.get('heizsystem') == 'Zentralheizung' else 'Nein'
+
+        total_images = len(img_sources)
+        if total_images == 0:
+            num_pages = 2
+        else:
+            num_pages = min(7, 2 + (total_images + 1) // 2)
+        img_groups = [img_sources[i:i+2] for i in range(0, len(img_sources), 2)]
+        photo_note = (
+            "Es wurden keine Fotos bereitgestellt." if not img_sources else
+            "Es wurde ein Foto bereitgestellt, welches auf Seite 3 abgebildet ist." if len(img_sources) == 1 else
+            "Es wurden Fotos bereitgestellt, welche ab Seite 3 abgebildet sind."
+        )
         fields = {
             0: [
                 (f"{data.get('strasse', '')} {data.get('hausnummer', '')},", 298, 494, 'center', 20, "bold", 210),
                 (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 298, 474, 'center', 20, "bold", 210),
-                # ... rest of the fields for page 0 ...
+                (data.get('heizungsart', ''), 300, 595, 'center', 20, 'bold', None),
+                (data.get('heizungshersteller', ''), 225, 422, 'left', 13, 'bold', 90),
+                (data.get('heizungstechnik', ''), 160, 392, 'left', 13, 'bold', 150),
+                (data.get('energietraeger', ''), 173, 362, 'left', 13, 'bold', None),
+                (energy_date, 184, 331, 'left', 13, 'bold', None),
+                (name, 229, 300, 'left', 13, 'bold', 250),
+                (data.get('baujahr', ''), 456, 422, 'left', 13, 'bold', None),
+                (efh, 356, 392, 'left', 13, 'bold', None),
+                (central, 419, 362, 'left', 13, 'bold', None),
+                (data.get('typenbezeichnung', ''), 443, 331, 'left', 13, 'bold', 100),
+                ('2044', 345, 254, 'left', 18, 'bold', None),
+                (photo_note, 43, 170, 'left', 11, 'normal', None),
+                (datetime.now().strftime("%d.%m.%Y"), 107, 126, 'center', 11, 'normal', None),
             ],
             1: [
                 (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
                 (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
             ]
         }
-
-        # Add image pages with rotations
-        img_groups = [img_sources[i:i+2] for i in range(0, len(img_sources), 2)]
-        num_pages = min(7, 2 + (len(img_sources) + 1) // 2)
-
         for i, group in enumerate(img_groups):
             page_idx = i + 2
             if page_idx >= num_pages:
                 break
-
             fields[page_idx] = [
                 (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
                 (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
             ]
-
             y_top = 460
             for j, (url, label, rotation) in enumerate(group):
                 try:
                     response = requests.get(url)
                     if response.status_code == 200:
                         img_data = BytesIO(response.content)
-                        
-                        # Apply rotation if specified
                         if rotation != 0:
                             img_data = rotate_image(img_data, rotation)
-                        
                         img = Image.open(img_data)
                         width, height = img.size
                         ratio = 180 / height
                         img_w = int(width * ratio)
                         img_h = 180
-
                         x_pos = A4[0] / 2 - img_w / 2
                         y_pos = y_top - j * (img_h + 60)
-
                         img_data.seek(0)
                         fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
                         fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
                 except Exception as e:
                     print(f"⚠️ Error processing image {url}: {e}")
-
-        # Create PDF with all pages
         for i in range(num_pages):
             if i < len(template_reader.pages):
                 page = template_reader.pages[i]
@@ -616,13 +626,11 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                     overlay = create_overlay(fields[i])
                     page.merge_page(overlay.pages[0])
                 writer.add_page(page)
-
         pdf_buffer = BytesIO()
         writer.write(pdf_buffer)
         pdf_bytes = pdf_buffer.getvalue()
         pdf_buffer.close()
         return pdf_bytes
-
     except Exception as e:
         print(f"⚠️ Error recreating PDF: {e}")
         raise
