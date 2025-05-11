@@ -307,8 +307,6 @@ export default function Page() {
         formData.append('oldUrl', item.pdfUrl);
       }
       formData.append('pathname', blobPathname);
-      formData.append('allowOverwrite', 'true');
-      formData.append('isNewPdf', 'true');
       formData.append('itemId', String(itemId));
       const blobUploadResponse = await fetch('/api/blob-upload', {
         method: 'POST',
@@ -432,11 +430,7 @@ export default function Page() {
       const formData = new FormData();
       formData.append('file', pdfFile);
       formData.append('pathname', blobPathname);
-      formData.append('allowOverwrite', 'false');
-      if (item.pdfUrl) {
-        formData.append('oldUrl', item.pdfUrl);
-      }
-      // Do NOT send isNewPdf or itemId for regeneration
+      formData.append('itemId', String(item.id));
       let blobUploadResponse;
       try {
         blobUploadResponse = await fetch('/api/blob-upload', {

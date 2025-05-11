@@ -8,25 +8,29 @@ export async function POST(request: Request): Promise<NextResponse> {
   const formData = await request.formData();
   const file = formData.get('file') as File | null;
   const oldUrl = formData.get('oldUrl') as string | null;
-  const pathname = formData.get('pathname') as string | null;
-  const allowOverwrite = formData.get('allowOverwrite') === 'true';
-  const isNewPdf = formData.get('isNewPdf') === 'true';
+  let pathname = formData.get('pathname') as string | null;
   const itemId = formData.get('itemId') as string | null;
 
   if (!file || !pathname) {
     return NextResponse.json({ error: 'Missing file or pathname' }, { status: 400 });
   }
 
-  // Handle old blob deletion if oldUrl is provided (not needed if overwriting)
-  if (oldUrl && !allowOverwrite) {
+  // Always use a unique filename for new PDFs
+  if (itemId) {
+    const timestamp = Date.now();
+    pathname = `pdfs/heizungsplakette-${itemId}-${timestamp}.pdf`;
+  }
+
+  // Try to delete the old blob if oldUrl is provided
+  if (oldUrl) {
     try {
       const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
       if (!blobToken) {
-        return NextResponse.json({ error: 'No BLOB_READ_WRITE_TOKEN in env' }, { status: 500 });
+        throw new Error('No BLOB_READ_WRITE_TOKEN in env');
       }
       const match = oldUrl.match(/https:\/\/(.*?)\.blob\.vercel-storage\.com\/(.+)/);
       if (!match) {
-        return NextResponse.json({ error: 'Invalid old blob URL' }, { status: 400 });
+        throw new Error('Invalid old blob URL');
       }
       const storeId = match[1];
       const oldPathname = match[2];
@@ -38,44 +42,23 @@ export async function POST(request: Request): Promise<NextResponse> {
           'x-api-version': '6',
         },
       });
+      // If not ok and not 404/405, log but continue
       if (!res.ok && res.status !== 404 && res.status !== 405) {
         const text = await res.text();
-        return NextResponse.json({ error: `Old blob delete failed: ${text}` }, { status: res.status });
-      }
-      // Wait for deletion to propagate (HEAD returns 404)
-      let deleted = false;
-      let tries = 0;
-      const maxTries = 5;
-      const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-      while (!deleted && tries < maxTries) {
-        const headResp = await fetch(deleteUrl, {
-          method: 'HEAD',
-          headers: {
-            Authorization: `Bearer ${blobToken}`,
-            'x-api-version': '6',
-          },
-        });
-        if (headResp.status === 404) {
-          deleted = true;
-          break;
-        }
-        tries++;
-        await delay(1000);
-      }
-      if (!deleted) {
-        return NextResponse.json({ error: 'Old blob could not be confirmed deleted.' }, { status: 500 });
+        console.warn(`Old blob delete failed: ${text}`);
       }
     } catch (error) {
-      return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error deleting old blob') }, { status: 500 });
+      console.warn('Error deleting old blob:', error);
+      // Continue anyway
     }
   }
 
   try {
-    // Use Vercel Blob SDK's put function to upload the new file
-    const blob = await put(pathname, file, { access: 'public', allowOverwrite: true });
+    // Upload the new file with the unique filename
+    const blob = await put(pathname, file, { access: 'public', allowOverwrite: false });
 
-    // If this is a new PDF creation (not a regeneration), update the database
-    if (isNewPdf && itemId) {
+    // Always update the database with the new PDF URL if itemId is provided
+    if (itemId) {
       try {
         await sql`
           UPDATE "Heizungsplakette"
@@ -85,7 +68,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       } catch (dbError) {
         console.error('Error updating database with PDF URL:', dbError);
         // Don't fail the whole request if DB update fails
-        // The PDF is still uploaded successfully
       }
     }
 
