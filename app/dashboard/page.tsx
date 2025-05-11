@@ -396,105 +396,107 @@ export default function Page() {
   const currentLogo = theme === 'dark' ? '/images/heizungsplakette-logo-hell.png' : '/images/heizungsplakette-logo.png';
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      <div className="w-52 bg-white dark:bg-gray-800 p-4 flex flex-col justify-between items-center shadow-lg">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 flex flex-col justify-between items-center border-r border-gray-200 dark:border-gray-700">
         <div>
-          <div className="mb-6">
+          <div className="mb-8">
             <Image src={currentLogo} alt="Heizungsplakette Logo" width={220} height={55} className="mb-4" />
-            <p className="text-sm text-gray-700 dark:text-gray-200 mt-8 ml-4">Dashboard</p>
           </div>
         </div>
-        <div className="flex items-center justify-start">
-          <Button onClick={handleLogout} variant="outline" className="px-6 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+        <div className="flex items-center justify-start space-x-3">
+          <Button onClick={handleLogout} variant="ghost" className="px-4 dark:text-gray-300 dark:hover:bg-gray-700/50">
             Abmelden
           </Button>
           <Button 
-            variant="outline" 
+            variant="ghost" 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="rounded-full p-2 flex items-center justify-center dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 ml-2"
+            className="rounded-full p-2 flex items-center justify-center dark:text-gray-300 dark:hover:bg-gray-700/50"
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? <Moon className="h-7 w-7" /> : <Sun className="h-7 w-7" />}
+            {theme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 p-6 overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+      <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <Input
               type="search"
               placeholder="Suche..."
-              className="pl-8 bg-white dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+              className="pl-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm dark:text-gray-200 dark:border-gray-700 rounded-xl"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <Switch
               id="show-details"
               checked={showDetails}
               onCheckedChange={setShowDetails}
+              className="data-[state=checked]:bg-blue-500"
             />
-            <Label htmlFor="show-details" className="text-gray-700 dark:text-gray-200">Details anzeigen</Label>
+            <Label htmlFor="show-details" className="text-gray-600 dark:text-gray-300">Details anzeigen</Label>
           </div>
         </div>
 
         {/* PDF Preview Section */} 
         {pdfPreviewUrl && (
-          <div className="mt-6 mb-6 p-4 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow">
-            <div className="flex justify-between items-center mb-2">
+          <div className="mt-6 mb-8 p-6 border rounded-2xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm dark:border-gray-700 shadow-sm">
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold dark:text-gray-200">PDF Vorschau</h2>
-              <Button variant="outline" onClick={() => setPdfPreviewUrl(null)} className="dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+              <Button variant="ghost" onClick={() => setPdfPreviewUrl(null)} className="dark:text-gray-300 dark:hover:bg-gray-700/50">
                 Vorschau schließen
               </Button>
             </div>
-            <div style={{ width: '100%', height: '700px', border: '1px solid #ccc' }}>
+            <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
               <iframe
                 src={pdfPreviewUrl}
                 width="100%"
-                height="100%"
+                height="700"
                 style={{ border: 'none' }}
                 title="PDF Preview"
-              ></iframe>
+              />
             </div>
           </div>
         )}
 
-        <div className="border rounded-md overflow-x-auto bg-white dark:bg-gray-800 shadow">
+        <div className="border rounded-2xl overflow-hidden bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="dark:text-gray-300">Art der Immobilie</TableHead>
-                <TableHead className="dark:text-gray-300">Heizungsart</TableHead>
-                <TableHead className="dark:text-gray-300">Status</TableHead>
-                <TableHead className="dark:text-gray-300">E-Mail</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="dark:text-gray-300 font-medium">Art der Immobilie</TableHead>
+                <TableHead className="dark:text-gray-300 font-medium">Heizungsart</TableHead>
+                <TableHead className="dark:text-gray-300 font-medium">Status</TableHead>
+                <TableHead className="dark:text-gray-300 font-medium">E-Mail</TableHead>
                 {showDetails && (
                   <>
-                    <TableHead className="dark:text-gray-300">Vorname</TableHead>
-                    <TableHead className="dark:text-gray-300">Nachname</TableHead>
-                    <TableHead className="dark:text-gray-300">Straße</TableHead>
-                    <TableHead className="dark:text-gray-300">Hausnummer</TableHead>
-                    <TableHead className="dark:text-gray-300">PLZ</TableHead>
-                    <TableHead className="dark:text-gray-300">Ort</TableHead>
-                    <TableHead className="dark:text-gray-300">Heizungshersteller</TableHead>
-                    <TableHead className="dark:text-gray-300">Baujahr</TableHead>
-                    <TableHead className="dark:text-gray-300">Heizsystem</TableHead>
-                    <TableHead className="dark:text-gray-300">Heizungstechnik</TableHead>
-                    <TableHead className="dark:text-gray-300">Energieträger</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Vorname</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Nachname</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Straße</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Hausnummer</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">PLZ</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Ort</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Heizungshersteller</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Baujahr</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Heizsystem</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Heizungstechnik</TableHead>
+                    <TableHead className="dark:text-gray-300 font-medium">Energieträger</TableHead>
                   </>
                 )}
-                <TableHead className="dark:text-gray-300">Aktionen</TableHead>
+                <TableHead className="dark:text-gray-300 font-medium">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredHeizungsplaketten.map((item) => (
-                <TableRow key={item.id} className="dark:border-gray-700">
+                <TableRow key={item.id} className="dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-700/50">
                   <TableCell className="dark:text-gray-300">{item.artDerImmobilie}</TableCell>
                   <TableCell className="dark:text-gray-300">{item.heizungsart}</TableCell>
                   <TableCell>
-                    <Badge className={`${getStatusColor(item.status)} dark:text-opacity-90`}>{item.status}</Badge>
+                    <Badge className={getStatusColor(item.status)}>
+                      {item.status}
+                    </Badge>
                   </TableCell>
                   <TableCell className="dark:text-gray-300">{item.email}</TableCell>
                   {showDetails && (
@@ -515,53 +517,34 @@ export default function Page() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <Button variant="ghost" className="h-8 w-8 p-0 dark:text-gray-300 dark:hover:bg-gray-700/50">
                           <span className="sr-only">Menü öffnen</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="dark:bg-gray-800 dark:border-gray-700">
-                        <DropdownMenuItem onClick={() => handleEdit(item)} className="dark:text-gray-300 dark:hover:bg-gray-700">
+                      <DropdownMenuContent align="end" className="dark:bg-gray-800/95 dark:border-gray-700 backdrop-blur-sm">
+                        <DropdownMenuItem onClick={() => handleEdit(item)} className="dark:text-gray-300 dark:hover:bg-gray-700/50">
                           <Edit className="mr-2 h-4 w-4" />
                           Bearbeiten
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleWatch(item)} className="dark:text-gray-300 dark:hover:bg-gray-700">
+                        <DropdownMenuItem onClick={() => handleWatch(item)} className="dark:text-gray-300 dark:hover:bg-gray-700/50">
                           <Eye className="mr-2 h-4 w-4" />
                           Beobachten
                         </DropdownMenuItem>
-                        {(() => {
-                          console.log(`Item ID: ${item.id}, PDF URL: "${item.pdfUrl}", !!item.pdfUrl: ${!!item.pdfUrl}, pdfGeneratingItemId: ${pdfGeneratingItemId}`);
-                          console.log(`  -> For PDF Gen Button, disabled prop will be: ${pdfGeneratingItemId === item.id || !!item.pdfUrl}`);
-                          return null; // Ensure it's a valid JSX expression
-                        })()}
                         <DropdownMenuItem 
-                          onClick={() => handleGeneratePdf(item.id)}
-                          disabled={pdfGeneratingItemId === item.id || !!item.pdfUrl} 
-                          className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
+                          onClick={() => handleGeneratePdf(item.id)} 
+                          disabled={pdfGeneratingItemId === item.id || !!item.pdfUrl}
+                          className="dark:text-gray-300 dark:hover:bg-gray-700/50"
                         >
                           <FileText className="mr-2 h-4 w-4" />
-                          {pdfGeneratingItemId === item.id ? "Generiere PDF..." : "PDF generieren"}
+                          {pdfGeneratingItemId === item.id ? 'Generiere PDF...' : item.pdfUrl ? 'PDF neu generieren' : 'PDF generieren'}
                         </DropdownMenuItem>
-                        {(() => {
-                          console.log(`  -> For PDF Preview Button, disabled prop will be: ${!item.pdfUrl || pdfGeneratingItemId === item.id}`);
-                          return null; // Ensure it's a valid JSX expression
-                        })()}
-                        <DropdownMenuItem 
-                          onClick={() => handlePreviewPdf(item.pdfUrl)}
-                          disabled={!item.pdfUrl || pdfGeneratingItemId === item.id}
-                          className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          PDF Vorschau
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleApprove(item.id)} disabled={isLoading || item.status === 'Genehmigt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
-                          <Check className="mr-2 h-4 w-4" />
-                          Genehmigen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleReject(item.id)} disabled={isLoading || item.status === 'Abgelehnt'} className="dark:text-gray-300 dark:hover:bg-gray-700 dark:disabled:text-gray-500">
-                          <X className="mr-2 h-4 w-4" />
-                          Ablehnen
-                        </DropdownMenuItem>
+                        {item.pdfUrl && (
+                          <DropdownMenuItem onClick={() => handlePreviewPdf(item.pdfUrl)} className="dark:text-gray-300 dark:hover:bg-gray-700/50">
+                            <Eye className="mr-2 h-4 w-4" />
+                            PDF anzeigen
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
