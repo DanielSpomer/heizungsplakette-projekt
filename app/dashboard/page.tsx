@@ -448,9 +448,27 @@ export default function Page() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_rotations: imageRotations, id: item.id }),
       });
-      if (!response.ok) throw new Error('Fehler beim PDF-Update');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error generating PDF' }));
+        throw new Error(errorData.error || 'Fehler beim PDF-Update');
+      }
+
+      // Check if the response is actually a PDF
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        console.error('Invalid response type:', contentType);
+        throw new Error('Server returned invalid response type. Expected PDF.');
+      }
+
       const pdfBlob = await response.blob();
       
+      // Verify the blob is actually a PDF
+      if (pdfBlob.type !== 'application/pdf') {
+        console.error('Invalid blob type:', pdfBlob.type);
+        throw new Error('Received invalid file type. Expected PDF.');
+      }
+
       // Use the same blob name as the original for regeneration
       const blobPathname = `pdfs/heizungsplakette-${item.id}.pdf`;
       const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}.pdf`, { type: 'application/pdf' });

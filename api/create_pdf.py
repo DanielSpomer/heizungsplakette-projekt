@@ -403,40 +403,37 @@ class handler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
-        """Handle POST requests for PDF recreation with rotated images."""
         try:
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
-            print(f"[DEBUG] Raw POST body: {post_data}")
-            print(f"[DEBUG] Headers: {self.headers}")
             data = json.loads(post_data.decode('utf-8'))
             
-            item_id = data.get('id')
-            image_rotations = data.get('image_rotations', {})
-            print(f"[DEBUG] Received image_rotations: {image_rotations}")
+            # Get the ID from the URL query parameters
+            parsed_url = urlparse(self.path)
+            query_params = parse_qs(parsed_url.query)
+            item_id = query_params.get('id', [None])[0]
             
             if not item_id:
-                self.send_response(400)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'error': 'Missing id parameter'}).encode('utf-8'))
+                self.send_error(400, "Missing id parameter")
                 return
 
+            # Get image rotations from the request body
+            image_rotations = data.get('image_rotations', {})
+            
+            # Generate PDF with rotated images
             pdf_bytes = recreate_pdf_with_rotated_images(item_id, image_rotations)
             
+            # Send the PDF response
             self.send_response(200)
-            self.send_header('Content-type', 'application/pdf')
-            self.send_header('Content-Disposition', f'attachment; filename="heizungsplakette_{item_id}_rotated.pdf"')
-            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/pdf')
+            self.send_header('Content-Length', str(len(pdf_bytes)))
             self.end_headers()
             self.wfile.write(pdf_bytes)
-
+            
         except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            error_response = {'error': f'Failed to recreate PDF: {str(e)}'}
-            self.wfile.write(json.dumps(error_response).encode('utf-8'))
+            print(f"Error in do_POST: {str(e)}")
+            print(f"Traceback:\n{traceback.format_exc()}")
+            self.send_error(500, f"Internal server error: {str(e)}")
 
 # --- Command-Line Execution Block --- #
 if __name__ == "__main__":
