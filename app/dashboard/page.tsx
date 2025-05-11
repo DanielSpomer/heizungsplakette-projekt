@@ -21,6 +21,12 @@ import { useToast } from "@/hooks/use-toast"
 import { upload } from '@vercel/blob/client'
 import React from 'react'
 import '../styles/pdf-scrollbar.css'
+import { Document, Page as PdfPage, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `/pdfjs-dist/build/pdf.worker.min.mjs`;
 
 type HeizungsplaketteItem = {
   id: number;
@@ -103,6 +109,7 @@ export default function Page() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [imageRotations, setImageRotations] = useState<{ [url: string]: number }>({});
   const [regeneratingPdf, setRegeneratingPdf] = useState(false);
+  const [numPages, setNumPages] = useState<number | null>(null);
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -511,11 +518,11 @@ export default function Page() {
   const currentLogo = theme === 'dark' ? '/images/heizungsplakette-logo-hell.png' : '/images/heizungsplakette-logo.png';
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900" suppressHydrationWarning={true}>
       <div className="w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-6 flex flex-col justify-between items-center border-r border-gray-200 dark:border-gray-700">
         <div>
           <div className="mb-8">
-            <Image src={currentLogo} alt="Heizungsplakette Logo" width={220} height={55} className="mb-4" />
+            <Image src={currentLogo} alt="Heizungsplakette Logo" width={220} height={55} className="mb-4" priority />
           </div>
         </div>
         <div className="flex items-center justify-start space-x-3">
@@ -557,20 +564,39 @@ export default function Page() {
         </div>
 
         {/* PDF Preview Section */} 
-        <Dialog open={!!pdfPreviewUrl} onOpenChange={(open) => !open && setPdfPreviewUrl(null)}>
+        <Dialog open={!!pdfPreviewUrl} onOpenChange={(open) => {
+          if (!open) {
+            setPdfPreviewUrl(null);
+            setNumPages(null);
+          }
+        }}>
           <DialogContent className="max-w-6xl max-h-[90vh] p-0 flex flex-row overflow-hidden dark:bg-gray-800 dark:border-gray-700">
-            <div className="flex-1 min-w-0 max-h-[90vh] overflow-auto p-8 bg-white dark:bg-gray-900 pdf-preview-scroll">
-              <DialogHeader>
-                <DialogTitle className="dark:text-gray-200 mb-4">PDF Vorschau</DialogTitle>
-              </DialogHeader>
+            <div className="flex-1 min-w-0 max-h-[90vh] overflow-auto p-8 bg-white dark:bg-gray-900 pdf-preview-scroll flex flex-col items-center">
               {pdfPreviewUrl && (
-                <iframe
-                  src={pdfPreviewUrl}
-                  width="100%"
-                  height="900"
-                  style={{ border: 'none', minHeight: 700 }}
-                  title="PDF Preview"
-                />
+                 <div className="w-full">
+                  <Document
+                    file={pdfPreviewUrl}
+                    onLoadSuccess={({ numPages: nextNumPages }) => setNumPages(nextNumPages)}
+                    onLoadError={(error) => {
+                        console.error('Error while loading PDF:', error);
+                        toast({ title: "Fehler beim Laden des PDFs", description: error.message, variant: "destructive" });
+                        setPdfPreviewUrl(null);
+                    }}
+                    loading={<div className="flex justify-center items-center h-64"><p>PDF wird geladen...</p></div>}
+                    noData={<p>Keine PDF-Datei zum Anzeigen vorhanden.</p>}
+                  >
+                    {Array.from(new Array(numPages || 0), (el, index) => (
+                      <PdfPage 
+                        key={`page_${index + 1}`}
+                        pageNumber={index + 1} 
+                        renderTextLayer={false} 
+                        renderAnnotationLayer={false} 
+                        width={typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.4, 650) : 650}
+                        className="mb-4 shadow-lg"
+                      />
+                    ))}
+                  </Document>
+                </div>
               )}
             </div>
             <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4 pdf-rotation-scroll">

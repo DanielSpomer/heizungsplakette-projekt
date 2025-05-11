@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%; /* Chrome, Safari, Edge */
+    text-size-adjust: 100%; /* Standard */
+    /* Oder alternativ: -webkit-text-size-adjust: none; text-size-adjust: none; */
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;

@@ -39,7 +39,7 @@ export default function RootLayout({
         <link rel="icon" href="/images/Heizungsplakette-FavIcon.png" type="image/png" />
         <link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
       </head>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
