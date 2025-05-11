@@ -411,6 +411,7 @@ class handler(BaseHTTPRequestHandler):
             
             item_id = data.get('id')
             image_rotations = data.get('image_rotations', {})
+            print(f"[DEBUG] Received image_rotations: {image_rotations}")
             
             if not item_id:
                 self.send_response(400)
@@ -529,6 +530,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
             urls = safe_split(data.get(key_name))
             for url in urls:
                 if url and url.startswith('http'):
+                    print(f"[DEBUG] Processing image for rotation: {url} | rotation: {image_rotations.get(url, 0) if image_rotations else 0}")
                     rotation = image_rotations.get(url, 0) if image_rotations else 0
                     img_sources.append((url, label, rotation))
 

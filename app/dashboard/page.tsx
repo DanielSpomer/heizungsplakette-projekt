@@ -413,6 +413,8 @@ export default function Page() {
     if (!item) return;
     setRegeneratingPdf(true);
     try {
+      // Debug log
+      console.log('Sending imageRotations:', imageRotations);
       // Send imageRotations as JSON in POST body
       const response = await fetch(`/api/create_pdf?id=${item.id}`, {
         method: 'POST',
