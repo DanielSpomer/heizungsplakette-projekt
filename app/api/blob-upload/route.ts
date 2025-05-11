@@ -15,7 +15,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   let pathname = formData.get('pathname') as string | null;
   const itemId = formData.get('itemId') as string | null;
 
-  console.log(`📥 FormData received -> itemId: ${itemId}, oldUrl: ${oldUrl}`);
+  console.log('All formData entries:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
 
   if (!file || !pathname) {
     console.warn('⚠️ Missing file or pathname');
