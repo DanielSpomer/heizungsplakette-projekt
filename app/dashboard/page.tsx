@@ -335,6 +335,11 @@ export default function Page() {
         tries++;
         if (!pdfAvailable) await delay(1500);
       }
+      
+      if (!item) {
+        throw new Error('Item not found');
+      }
+      
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
       setPdfPreviewUrl(newBlobResult.url);
       toast({ 
@@ -472,6 +477,11 @@ export default function Page() {
         tries++;
         if (!pdfAvailable) await delay(1500);
       }
+      
+      if (!item) {
+        throw new Error('Item not found');
+      }
+      
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
       setPdfPreviewUrl(newBlobResult.url);
       toast({ 
