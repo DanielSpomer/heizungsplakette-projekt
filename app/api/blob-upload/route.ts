@@ -1,6 +1,7 @@
 import { put, del } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import { deleteBlobByUrl } from '@/lib/deleteBlob';
 // import { auth } from '@clerk/nextjs'; // Example for authentication
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -45,12 +46,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // Try to delete the old blob using the Vercel Blob SDK's del function
   if (oldUrl) {
-    try {
-      await del([oldUrl]);
-    } catch (error) {
-      console.warn('Error deleting old blob with del():', error);
-      // Continue anyway
-    }
+    await deleteBlobByUrl(oldUrl); 
   }
 
   return NextResponse.json(blob);
