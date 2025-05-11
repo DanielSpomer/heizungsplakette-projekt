@@ -222,6 +222,8 @@ export default function HeizungsplaketteMaske() {
           }
           return newErrors
         })
+        // Reset the input value so the same file can be selected for another field
+        e.target.value = ""
       }
     }
 
