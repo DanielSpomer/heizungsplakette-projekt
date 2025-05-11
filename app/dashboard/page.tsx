@@ -536,7 +536,7 @@ export default function Page() {
                 const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl) || heizungsplaketten.find(p => String(p.id) === String(pdfPreviewUrl?.split('-')[1]));
                 if (!item) return null;
                 return getAllImagesForPreview().map(({ url, label }, idx) => (
-                  <div key={url} className="border p-2 rounded mb-2">
+                  <div key={url} className="border p-2 rounded mb-2 overflow-hidden">
                     <div className="font-semibold mb-1">{label} {idx + 1}</div>
                     <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }} />
                     <div className="flex gap-2 justify-between">
