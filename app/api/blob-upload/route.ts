@@ -1,24 +1,32 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 // import { auth } from '@clerk/nextjs'; // Example for authentication
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody & { oldUrl?: string };
+  // Parse multipart/form-data
+  const formData = await request.formData();
+  const file = formData.get('file') as File | null;
+  const oldUrl = formData.get('oldUrl') as string | null;
+  const pathname = formData.get('pathname') as string | null;
+
+  if (!file || !pathname) {
+    return NextResponse.json({ error: 'Missing file or pathname' }, { status: 400 });
+  }
 
   // Handle old blob deletion if oldUrl is provided
-  if (body.oldUrl) {
+  if (oldUrl) {
     try {
       const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
       if (!blobToken) {
         return NextResponse.json({ error: 'No BLOB_READ_WRITE_TOKEN in env' }, { status: 500 });
       }
-      const match = body.oldUrl.match(/https:\/\/(.*?)\.blob\.vercel-storage\.com\/(.+)/);
+      const match = oldUrl.match(/https:\/\/(.*?)\.blob\.vercel-storage\.com\/(.+)/);
       if (!match) {
         return NextResponse.json({ error: 'Invalid old blob URL' }, { status: 400 });
       }
       const storeId = match[1];
-      const pathname = match[2];
-      const deleteUrl = `https://${storeId}.blob.vercel-storage.com/${pathname}`;
+      const oldPathname = match[2];
+      const deleteUrl = `https://${storeId}.blob.vercel-storage.com/${oldPathname}`;
       const res = await fetch(deleteUrl, {
         method: 'DELETE',
         headers: {
@@ -36,68 +44,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async (
-        /*_pathname: string,
-        /* clientPayload?: string | null */
-      ) => {
-        // This is where you would add authentication and authorization.
-        // For example, using Clerk:
-        // const { userId } = auth();
-        // if (!userId) {
-        //   throw new Error('Not authenticated');
-        // }
-        // console.log(`User ${userId} is trying to upload to ${pathname}`);
-
-        // ⚠️ IMPORTANT: Authenticate and authorize users before generating the token.
-        // Otherwise, you're allowing anonymous uploads.
-        // For now, we are allowing anonymous uploads for demonstration.
-        // In a real application, ensure only authenticated users can upload.
-
-        return {
-          allowedContentTypes: ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'text/plain'],
-          tokenPayload: JSON.stringify({
-            // Store any additional information you want to associate with the blob.
-            // For example, a user ID if you have authentication:
-            // userId: userId,
-            // source: 'blob-upload-page' 
-          }),
-          addRandomSuffix: true, // Ensures unique filenames
-        };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // This callback is triggered after the blob is successfully uploaded.
-        console.log('Blob upload completed:', blob);
-        console.log('Token payload:', tokenPayload);
-
-        // ⚠️ This callback might not work reliably on `localhost` development environments
-        // because Vercel Blob needs to send a webhook to your server.
-        // For local testing of this callback, consider using a tunneling service like ngrok.
-
-        try {
-          // Example: Update your database with the blob URL
-          // if (tokenPayload) {
-          //   const { userId } = JSON.parse(tokenPayload);
-          //   // await db.users.update({ where: { id: userId }, data: { avatarUrl: blob.url } });
-          // }
-          console.log(`File ${blob.pathname} uploaded. URL: ${blob.url}`);
-        } catch (error) {
-          console.error('Error in onUploadCompleted:', error);
-          // Even if this part fails, the file is already in the blob store.
-          // You might want to add retry logic or error reporting here.
-          throw new Error('Could not process upload completion: ' + (error as Error).message);
-        }
-      },
-    });
-
-    return NextResponse.json(jsonResponse);
+    // Use Vercel Blob SDK's put function to upload the new file
+    const blob = await put(pathname, file, { access: 'public' });
+    return NextResponse.json(blob);
   } catch (error) {
-    console.error('Error in POST /api/blob-upload:', error);
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 400 }, // Bad request
-    );
+    return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error uploading blob') }, { status: 500 });
   }
 } 

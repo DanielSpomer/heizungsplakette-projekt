@@ -293,19 +293,30 @@ export default function Page() {
 
       const pdfBlob = await response.blob(); 
       
+      // Find the item for the given itemId
+      const item = heizungsplaketten.find(p => String(p.id) === String(itemId));
       // Define the desired path and filename in the blob store
       const blobPathname = `pdfs/heizungsplakette-${itemId}.pdf`;
-      // The File object itself can have a simpler name, its blobPathname that matters for storage location
       const localFileNameForFileObject = `heizungsplakette-${itemId}.pdf`;
-
       const pdfFile = new File([pdfBlob], localFileNameForFileObject, { type: 'application/pdf' });
 
-      // Now upload this PDF file to Vercel Blob using the Next.js handler
-      // The first argument to upload() is the full path in the blob store
-      const newBlobResult = await upload(blobPathname, pdfFile, {
-        access: 'public',
-        handleUploadUrl: '/api/blob-upload', 
+      // Upload new PDF to Vercel Blob, pass oldUrl for deletion
+      const formData = new FormData();
+      formData.append('file', pdfFile);
+      if (item && item.pdfUrl) {
+        formData.append('oldUrl', item.pdfUrl);
+      }
+      formData.append('pathname', blobPathname);
+      const blobUploadResponse = await fetch('/api/blob-upload', {
+        method: 'POST',
+        body: formData,
       });
+      if (!blobUploadResponse.ok) {
+        const errorData = await blobUploadResponse.json().catch(() => ({ error: 'Unknown error uploading PDF' }));
+        throw new Error(errorData.error || 'Fehler beim Hochladen des neuen PDFs');
+      }
+      const newBlobResult = await blobUploadResponse.json();
+      // newBlobResult.url should be the new PDF URL
 
       // --- Save PDF URL to Database using the new static route ---
       if (newBlobResult && newBlobResult.url) {
@@ -425,38 +436,25 @@ export default function Page() {
       if (!response.ok) throw new Error('Fehler beim PDF-Update');
       const pdfBlob = await response.blob();
       
-      // Upload new PDF to Vercel Blob
+      // Upload new PDF to Vercel Blob, pass oldUrl for deletion
       const blobPathname = `pdfs/heizungsplakette-${item.id}-regenerated.pdf`;
       const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}-regenerated.pdf`, { type: 'application/pdf' });
-      const newBlobResult = await upload(blobPathname, pdfFile, {
-        access: 'public',
-        handleUploadUrl: '/api/blob-upload',
-      });
-
-      // Delete old PDF from Blob storage if exists
+      const formData = new FormData();
+      formData.append('file', pdfFile);
       if (item.pdfUrl) {
-        try {
-          const deleteResponse = await fetch('/api/delete-blob', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: item.pdfUrl }),
-          });
-          
-          if (!deleteResponse.ok) {
-            const errorData = await deleteResponse.json().catch(() => ({ error: "Failed to parse error response" }));
-            console.error('Failed to delete old PDF:', errorData);
-            throw new Error(`Failed to delete old PDF: ${errorData.error || deleteResponse.statusText}`);
-          }
-          
-          // Wait for deletion to complete
-          await deleteResponse.json();
-          console.log('Successfully deleted old PDF');
-        } catch (deleteError: unknown) {
-          console.error('Error deleting old PDF:', deleteError);
-          const errorMessage = deleteError instanceof Error ? deleteError.message : 'Unknown error';
-          throw new Error(`Failed to delete old PDF: ${errorMessage}`);
-        }
+        formData.append('oldUrl', item.pdfUrl);
       }
+      formData.append('pathname', blobPathname);
+      const blobUploadResponse = await fetch('/api/blob-upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!blobUploadResponse.ok) {
+        const errorData = await blobUploadResponse.json().catch(() => ({ error: 'Unknown error uploading PDF' }));
+        throw new Error(errorData.error || 'Fehler beim Hochladen des neuen PDFs');
+      }
+      const newBlobResult = await blobUploadResponse.json();
+      // newBlobResult.url should be the new PDF URL
 
       // Update DB with new PDF URL
       const updateResponse = await fetch('/api/update-record-pdf', {
