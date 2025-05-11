@@ -4,6 +4,8 @@ import { sql } from '@vercel/postgres';
 import { deleteBlobByUrl } from '@/lib/deleteBlob';
 // import { auth } from '@clerk/nextjs'; // Example for authentication
 
+
+
 export async function POST(request: Request): Promise<NextResponse> {
   console.log('⏳ Received POST request for blob upload');
 
@@ -12,6 +14,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const oldUrl = formData.get('oldUrl') as string | null;
   let pathname = formData.get('pathname') as string | null;
   const itemId = formData.get('itemId') as string | null;
+
+  console.log(`📥 FormData received -> itemId: ${itemId}, oldUrl: ${oldUrl}`);
 
   if (!file || !pathname) {
     console.warn('⚠️ Missing file or pathname');

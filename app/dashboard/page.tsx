@@ -86,6 +86,8 @@ const LoadingSpinner = () => (
   </div>
 );
 
+
+
 export default function Page() {
   const [heizungsplaketten, setHeizungsplaketten] = useState<HeizungsplaketteItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -301,6 +303,10 @@ export default function Page() {
       const pdfFile = new File([pdfBlob], localFileNameForFileObject, { type: 'application/pdf' });
 
       // Upload new PDF to Vercel Blob, pass oldUrl for deletion
+      console.log('Sending PDF to blob upload...');
+      console.log('itemId:', itemId);
+      console.log('oldUrl:', item?.pdfUrl);
+      console.log('pathname:', blobPathname);
       const formData = new FormData();
       formData.append('file', pdfFile);
       if (item && item.pdfUrl) {

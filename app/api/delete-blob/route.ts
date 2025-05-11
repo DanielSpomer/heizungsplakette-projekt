@@ -1,19 +1,11 @@
-// app/api/delete-blob/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { del } from '@vercel/blob';
+import { deleteBlobByUrl } from '@/lib/deleteBlob';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
+  const { blobUrl } = await req.json();
   try {
-    const { blobUrl } = await req.json();
-
-    if (!blobUrl) {
-      return NextResponse.json({ error: 'Missing blobUrl' }, { status: 400 });
-    }
-
-    await del(blobUrl);
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('Delete error:', err);
-    return NextResponse.json({ error: 'Failed to delete blob' }, { status: 500 });
+    await deleteBlobByUrl(blobUrl);
+    return new Response(JSON.stringify({ success: true }));
+  } catch (error: any) {
+    return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500 });
   }
 }
