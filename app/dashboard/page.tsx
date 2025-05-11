@@ -307,6 +307,7 @@ export default function Page() {
         formData.append('oldUrl', item.pdfUrl);
       }
       formData.append('pathname', blobPathname);
+      formData.append('allowOverwrite', 'true');
       const blobUploadResponse = await fetch('/api/blob-upload', {
         method: 'POST',
         body: formData,
@@ -450,15 +451,13 @@ export default function Page() {
       if (!response.ok) throw new Error('Fehler beim PDF-Update');
       const pdfBlob = await response.blob();
       
-      // Upload new PDF to Vercel Blob, pass oldUrl for deletion
-      const blobPathname = `pdfs/heizungsplakette-${item.id}-regenerated.pdf`;
-      const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}-regenerated.pdf`, { type: 'application/pdf' });
+      // Use the same blob name as the original for regeneration
+      const blobPathname = `pdfs/heizungsplakette-${item.id}.pdf`;
+      const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}.pdf`, { type: 'application/pdf' });
       const formData = new FormData();
       formData.append('file', pdfFile);
-      if (item.pdfUrl) {
-        formData.append('oldUrl', item.pdfUrl);
-      }
       formData.append('pathname', blobPathname);
+      formData.append('allowOverwrite', 'true');
       const blobUploadResponse = await fetch('/api/blob-upload', {
         method: 'POST',
         body: formData,

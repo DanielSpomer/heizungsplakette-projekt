@@ -8,13 +8,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   const file = formData.get('file') as File | null;
   const oldUrl = formData.get('oldUrl') as string | null;
   const pathname = formData.get('pathname') as string | null;
+  const allowOverwrite = formData.get('allowOverwrite') === 'true';
 
   if (!file || !pathname) {
     return NextResponse.json({ error: 'Missing file or pathname' }, { status: 400 });
   }
 
-  // Handle old blob deletion if oldUrl is provided
-  if (oldUrl) {
+  // Handle old blob deletion if oldUrl is provided (not needed if overwriting)
+  if (oldUrl && !allowOverwrite) {
     try {
       const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
       if (!blobToken) {
@@ -46,7 +47,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     // Use Vercel Blob SDK's put function to upload the new file
-    const blob = await put(pathname, file, { access: 'public' });
+    const blob = await put(pathname, file, { access: 'public', allowOverwrite });
     return NextResponse.json(blob);
   } catch (error) {
     return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error uploading blob') }, { status: 500 });
