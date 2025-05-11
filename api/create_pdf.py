@@ -196,7 +196,6 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     print(f"DEBUG: generate_pdf_in_memory called. Received row_data (first 500 chars): {json.dumps(dict(row_data), default=str)[:500]}")
     script_dir = os.path.dirname(__file__)
     full_template_path = os.path.join(script_dir, template_path)
-    image_base_path = os.path.join(script_dir, "images")
     font_base_path = os.path.join(script_dir, "fonts")
     try:
         montserrat_regular_path = os.path.join(font_base_path, "Montserrat-Regular.ttf")
@@ -219,12 +218,13 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     efh = 'Ja' if row_data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
     central = 'Ja' if row_data.get('heizsystem') == 'Zentralheizung' else 'Nein'
 
+    # Collect all image URLs
     img_sources = []
     def add_imgs(key_name, label):
         print(f"DEBUG: add_imgs for {key_name}, raw value: {row_data.get(key_name)}")
-        for p in safe_split(row_data.get(key_name)):
-            path = os.path.join(image_base_path, p) 
-            img_sources.append((path, label))
+        for url in safe_split(row_data.get(key_name)):
+            if url and url.startswith('http'):  # Only add valid URLs
+                img_sources.append((url, label))
 
     add_imgs("heizungsanlageFotos", "Foto zur Heizungsanlage")
     add_imgs("heizungsetiketteFotos", "Foto zum Typenschild")
@@ -232,6 +232,15 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     add_imgs("bedienungsanleitungFotos", "Foto zur Bedienungsanleitung")
 
     print(f"DEBUG: img_sources after populating: {img_sources}")
+    
+    # Calculate number of pages needed
+    total_images = len(img_sources)
+    if total_images == 0:
+        num_pages = 2  # Just first 2 pages
+    else:
+        num_pages = min(7, 2 + (total_images + 1) // 2)  # 2 base pages + 1 page per 2 images, max 7 pages
+    
+    # Group images into pairs for each page
     img_groups = [img_sources[i:i+2] for i in range(0, len(img_sources), 2)]
     print(f"DEBUG: img_groups created: {img_groups}")
 
@@ -265,30 +274,45 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
         ]
     }
 
+    # Add image pages
     for i, group in enumerate(img_groups):
         page_idx = i + 2
-        print(f"DEBUG: Processing img_group index {i}, page_idx {page_idx}, content: {group}") 
-        if page_idx >= len(template_reader.pages):
-            print(f"⚠️ Template does not have page {page_idx + 1}. Skipping image group.")
+        if page_idx >= num_pages:  # Stop if we've reached the maximum number of pages
             break
+            
         fields[page_idx] = [
             (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
             (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
         ]
         y_top = 460
-        for j, (path, label) in enumerate(group):
-            img_w, img_h = scale_image(path, 180)
-            x_pos = A4[0] / 2 - img_w / 2
-            y_pos = y_top - j * (img_h + 60) 
-            fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
-            fields[page_idx].append((path, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
+        for j, (url, label) in enumerate(group):
+            try:
+                # Download image from URL
+                response = requests.get(url)
+                if response.status_code == 200:
+                    img_data = BytesIO(response.content)
+                    img = Image.open(img_data)
+                    width, height = img.size
+                    ratio = 180 / height  # Scale to 180px height
+                    img_w = int(width * ratio)
+                    img_h = 180
+                    
+                    x_pos = A4[0] / 2 - img_w / 2
+                    y_pos = y_top - j * (img_h + 60)
+                    
+                    fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
+                    fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
+            except Exception as e:
+                print(f"⚠️ Error processing image {url}: {e}")
 
-    for i in range(len(template_reader.pages)):
-        page = template_reader.pages[i]
-        if i in fields:
-            overlay = create_overlay(fields[i])
-            page.merge_page(overlay.pages[0])
-        writer.add_page(page)
+    # Add only the required number of pages
+    for i in range(num_pages):
+        if i < len(template_reader.pages):
+            page = template_reader.pages[i]
+            if i in fields:
+                overlay = create_overlay(fields[i])
+                page.merge_page(overlay.pages[0])
+            writer.add_page(page)
 
     pdf_buffer = BytesIO()
     writer.write(pdf_buffer)
