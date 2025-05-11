@@ -458,29 +458,67 @@ export default function Page() {
       formData.append('file', pdfFile);
       formData.append('pathname', blobPathname);
       formData.append('allowOverwrite', 'true');
-      const blobUploadResponse = await fetch('/api/blob-upload', {
-        method: 'POST',
-        body: formData,
-      });
+      let blobUploadResponse;
+      try {
+        blobUploadResponse = await fetch('/api/blob-upload', {
+          method: 'POST',
+          body: formData,
+        });
+      } catch (uploadErr) {
+        console.error('Blob upload failed:', uploadErr);
+        toast({
+          title: 'Fehler',
+          description: 'Fehler beim Hochladen des neuen PDFs (Netzwerkfehler).',
+          variant: 'destructive',
+        });
+        setRegeneratingPdf(false);
+        return;
+      }
       if (!blobUploadResponse.ok) {
         const errorData = await blobUploadResponse.json().catch(() => ({ error: 'Unknown error uploading PDF' }));
-        throw new Error(errorData.error || 'Fehler beim Hochladen des neuen PDFs');
+        console.error('Blob upload error:', errorData);
+        toast({
+          title: 'Fehler',
+          description: errorData.error || 'Fehler beim Hochladen des neuen PDFs',
+          variant: 'destructive',
+        });
+        setRegeneratingPdf(false);
+        return;
       }
       const newBlobResult = await blobUploadResponse.json();
       // newBlobResult.url should be the new PDF URL
 
       // Update DB with new PDF URL
-      const updateResponse = await fetch('/api/update-record-pdf', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: String(item.id), pdfUrl: newBlobResult.url }),
-      });
-      
+      let updateResponse;
+      try {
+        updateResponse = await fetch('/api/update-record-pdf', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: String(item.id), pdfUrl: newBlobResult.url }),
+        });
+      } catch (dbErr) {
+        console.error('DB update failed:', dbErr);
+        toast({
+          title: 'Fehler',
+          description: 'Fehler beim Aktualisieren der PDF-URL in der Datenbank.',
+          variant: 'destructive',
+        });
+        setRegeneratingPdf(false);
+        return;
+      }
       if (!updateResponse.ok) {
-        throw new Error('Fehler beim Aktualisieren der PDF-URL in der Datenbank');
+        const errorData = await updateResponse.json().catch(() => ({ error: 'Unknown error updating DB' }));
+        console.error('DB update error:', errorData);
+        toast({
+          title: 'Fehler',
+          description: errorData.error || 'Fehler beim Aktualisieren der PDF-URL in der Datenbank.',
+          variant: 'destructive',
+        });
+        setRegeneratingPdf(false);
+        return;
       }
 
-      // Update local state and preview with retry logic for blob propagation
+      // Retry logic for blob propagation
       let pdfAvailable = false;
       let tries = 0;
       const maxTries = 3;
