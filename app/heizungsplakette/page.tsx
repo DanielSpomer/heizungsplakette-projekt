@@ -371,47 +371,37 @@ export default function HeizungsplaketteMaske() {
 
     try {
       // Upload images to Vercel Blob Storage
-      const uploadPromises: Promise<string>[] = []
-      const imageFields = [
-        'heizungsanlageFotos',
-        'heizungsetiketteFotos',
-        'heizungslabelFotos',
-        'bedienungsanleitungFotos'
-      ] as const
-
-      for (const field of imageFields) {
-        const files = formData[field]
-        if (files && files.length > 0) {
-          for (const file of files) {
-            const uploadFormData = new FormData()
-            uploadFormData.append('file', file)
-            
-            const response = await fetch('/api/upload-image', {
-              method: 'POST',
-              body: uploadFormData,
-            })
-            
-            if (!response.ok) {
-              throw new Error(`Failed to upload ${file.name}`)
-            }
-            
-            const data = await response.json()
-            uploadPromises.push(Promise.resolve(data.url))
+      const uploadField = async (files: File[]) => {
+        const urls: string[] = [];
+        for (const file of files) {
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', file);
+          const response = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+          if (!response.ok) {
+            throw new Error(`Failed to upload ${file.name}`);
           }
+          const data = await response.json();
+          urls.push(data.url);
         }
-      }
+        return urls;
+      };
 
-      // Wait for all uploads to complete
-      const uploadedUrls = await Promise.all(uploadPromises)
+      const heizungsanlageUrls = await uploadField(formData.heizungsanlageFotos);
+      const heizungsetiketteUrls = await uploadField(formData.heizungsetiketteFotos);
+      const heizungslabelUrls = await uploadField(formData.heizungslabelFotos);
+      const bedienungsanleitungUrls = await uploadField(formData.bedienungsanleitungFotos);
 
       // Prepare form data with uploaded URLs
       const formDataToSubmit = {
         ...formData,
-        heizungsanlageFotos: uploadedUrls.filter((_, i) => i < formData.heizungsanlageFotos.length),
-        heizungsetiketteFotos: uploadedUrls.filter((_, i) => i < formData.heizungsetiketteFotos.length),
-        heizungslabelFotos: uploadedUrls.filter((_, i) => i < formData.heizungslabelFotos.length),
-        bedienungsanleitungFotos: uploadedUrls.filter((_, i) => i < formData.bedienungsanleitungFotos.length),
-      }
+        heizungsanlageFotos: heizungsanlageUrls,
+        heizungsetiketteFotos: heizungsetiketteUrls,
+        heizungslabelFotos: heizungslabelUrls,
+        bedienungsanleitungFotos: bedienungsanleitungUrls,
+      };
 
       // Submit form data
       const response = await fetch("/api/heizungsplakette", {
@@ -1337,6 +1327,13 @@ export default function HeizungsplaketteMaske() {
                       accept="image/*"
                       max="3"
                     />
+                    {formData.heizungsanlageFotos.length > 0 && (
+                      <ul className="text-xs text-gray-600 mt-1">
+                        {formData.heizungsanlageFotos.map((file, idx) => (
+                          <li key={idx}>{file.name}</li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="flex items-center mt-2">
                       <Checkbox
                         id="verzichtAufHeizungsanlageFotos"
@@ -1362,6 +1359,13 @@ export default function HeizungsplaketteMaske() {
                       accept="image/*"
                       max="3"
                     />
+                    {formData.heizungsetiketteFotos.length > 0 && (
+                      <ul className="text-xs text-gray-600 mt-1">
+                        {formData.heizungsetiketteFotos.map((file, idx) => (
+                          <li key={idx}>{file.name}</li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="flex items-center mt-2">
                       <Checkbox
                         id="verzichtAufHeizungsetiketteFotos"
@@ -1387,6 +1391,13 @@ export default function HeizungsplaketteMaske() {
                         accept="image/*"
                         max="1"
                       />
+                      {formData.heizungslabelFotos.length > 0 && (
+                        <ul className="text-xs text-gray-600 mt-1">
+                          {formData.heizungslabelFotos.map((file, idx) => (
+                            <li key={idx}>{file.name}</li>
+                          ))}
+                        </ul>
+                      )}
                       <div className="flex items-center mt-2">
                         <Checkbox
                           id="verzichtAufHeizungslabelFotos"
@@ -1413,6 +1424,13 @@ export default function HeizungsplaketteMaske() {
                       accept="image/*"
                       max="3"
                     />
+                    {formData.bedienungsanleitungFotos.length > 0 && (
+                      <ul className="text-xs text-gray-600 mt-1">
+                        {formData.bedienungsanleitungFotos.map((file, idx) => (
+                          <li key={idx}>{file.name}</li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="flex items-center mt-2">
                       <Checkbox
                         id="verzichtAufBedienungsanleitungFotos"
