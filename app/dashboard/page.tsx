@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { upload } from '@vercel/blob/client'
 import React from 'react'
-import './pdf-scrollbar.css'
+import '../styles/pdf-scrollbar.css'
 
 type HeizungsplaketteItem = {
   id: number;
