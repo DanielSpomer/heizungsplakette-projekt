@@ -308,6 +308,8 @@ export default function Page() {
       }
       formData.append('pathname', blobPathname);
       formData.append('allowOverwrite', 'true');
+      formData.append('isNewPdf', 'true');
+      formData.append('itemId', String(itemId));
       const blobUploadResponse = await fetch('/api/blob-upload', {
         method: 'POST',
         body: formData,

@@ -1,5 +1,6 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { sql } from '@vercel/postgres';
 // import { auth } from '@clerk/nextjs'; // Example for authentication
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -9,6 +10,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const oldUrl = formData.get('oldUrl') as string | null;
   const pathname = formData.get('pathname') as string | null;
   const allowOverwrite = formData.get('allowOverwrite') === 'true';
+  const isNewPdf = formData.get('isNewPdf') === 'true';
+  const itemId = formData.get('itemId') as string | null;
 
   if (!file || !pathname) {
     return NextResponse.json({ error: 'Missing file or pathname' }, { status: 400 });
@@ -48,6 +51,22 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     // Use Vercel Blob SDK's put function to upload the new file
     const blob = await put(pathname, file, { access: 'public', allowOverwrite });
+
+    // If this is a new PDF creation (not a regeneration), update the database
+    if (isNewPdf && itemId) {
+      try {
+        await sql`
+          UPDATE "Heizungsplakette"
+          SET "pdfUrl" = ${blob.url}
+          WHERE id = ${itemId}
+        `;
+      } catch (dbError) {
+        console.error('Error updating database with PDF URL:', dbError);
+        // Don't fail the whole request if DB update fails
+        // The PDF is still uploaded successfully
+      }
+    }
+
     return NextResponse.json(blob);
   } catch (error) {
     return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error uploading blob') }, { status: 500 });
