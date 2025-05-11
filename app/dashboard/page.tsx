@@ -417,12 +417,12 @@ export default function Page() {
       const response = await fetch(`/api/create_pdf?id=${item.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageRotations }),
+        body: JSON.stringify({ imageRotations, id: item.id }),
       });
       if (!response.ok) throw new Error('Fehler beim PDF-Update');
       const pdfBlob = await response.blob();
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      setPdfPreviewUrl(pdfUrl);
+      setPdfPreviewUrl(pdfUrl); // Update the preview with the new PDF
       toast({ title: 'PDF neu generiert', description: 'Das PDF wurde mit den gewählten Rotationen neu erstellt.' });
     } catch (e) {
       toast({ title: 'Fehler', description: 'PDF konnte nicht neu generiert werden.', variant: 'destructive' });
@@ -485,49 +485,53 @@ export default function Page() {
 
         {/* PDF Preview Section */} 
         <Dialog open={!!pdfPreviewUrl} onOpenChange={(open) => !open && setPdfPreviewUrl(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
-            <DialogHeader>
-              <DialogTitle className="dark:text-gray-200">PDF Vorschau</DialogTitle>
-            </DialogHeader>
-            <div className="flex gap-8">
-              <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                {pdfPreviewUrl && (
-                  <iframe
-                    src={pdfPreviewUrl}
-                    width="100%"
-                    height="700"
-                    style={{ border: 'none' }}
-                    title="PDF Preview"
-                  />
-                )}
-              </div>
-              <div className="w-80 flex flex-col gap-4">
-                {getAllImagesForPreview().map(({ url, label }, idx) => (
-                  <div key={url} className="border p-2 rounded mb-2">
-                    <div className="font-semibold mb-1">{label} {idx + 1}</div>
-                    <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" />
-                    <div className="flex gap-2 justify-between">
-                      {[0, 90, 180, 270].map(deg => (
-                        <Button
-                          key={deg}
-                          variant={imageRotations[url] === deg ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleSetRotation(url, deg)}
-                        >
-                          {deg}&deg;
-                        </Button>
-                      ))}
-                    </div>
+          <DialogContent className="max-w-6xl max-h-[90vh] p-0 flex flex-row overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+            <div className="flex-1 min-w-0 max-h-[90vh] overflow-auto p-8 bg-white dark:bg-gray-900">
+              <DialogHeader>
+                <DialogTitle className="dark:text-gray-200 mb-4">PDF Vorschau</DialogTitle>
+              </DialogHeader>
+              {pdfPreviewUrl && (
+                <iframe
+                  src={pdfPreviewUrl}
+                  width="100%"
+                  height="900"
+                  style={{ border: 'none', minHeight: 700 }}
+                  title="PDF Preview"
+                />
+              )}
+            </div>
+            <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4">
+              {getAllImagesForPreview().map(({ url, label }, idx) => (
+                <div key={url} className="border p-2 rounded mb-2">
+                  <div className="font-semibold mb-1">{label} {idx + 1}</div>
+                  <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" />
+                  <div className="flex gap-2 justify-between">
+                    {[0, 90, 180, 270].map(deg => (
+                      <Button
+                        key={deg}
+                        variant={imageRotations[url] === deg ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSetRotation(url, deg)}
+                      >
+                        {deg}&deg;
+                      </Button>
+                    ))}
                   </div>
-                ))}
-                <Button
-                  onClick={handleRegeneratePdf}
-                  disabled={regeneratingPdf}
-                  className="mt-4 w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
-                >
-                  {regeneratingPdf ? 'PDF wird neu generiert...' : 'PDF neu generieren'}
-                </Button>
-              </div>
+                </div>
+              ))}
+              <Button
+                onClick={handleRegeneratePdf}
+                disabled={regeneratingPdf}
+                className="mt-4 w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white flex items-center justify-center"
+              >
+                {regeneratingPdf && (
+                  <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                )}
+                {regeneratingPdf ? 'PDF wird neu generiert...' : 'PDF neu generieren'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

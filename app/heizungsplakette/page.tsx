@@ -1318,22 +1318,21 @@ export default function HeizungsplaketteMaske() {
                     <Label htmlFor="heizungsanlageFotos" className="font-semibold">
                       Fotos der Heizungsanlage (max. 3)
                     </Label>
-                    <Input
-                      id="heizungsanlageFotos"
-                      name="heizungsanlageFotos"
-                      type="file"
-                      multiple
-                      onChange={handleFileChange("heizungsanlageFotos")}
-                      accept="image/*"
-                      max="3"
-                    />
-                    {formData.heizungsanlageFotos.length > 0 && (
-                      <ul className="text-xs text-gray-600 mt-1">
-                        {formData.heizungsanlageFotos.map((file, idx) => (
-                          <li key={idx}>{file.name}</li>
-                        ))}
-                      </ul>
-                    )}
+                    <label className="block relative cursor-pointer">
+                      <input
+                        id="heizungsanlageFotos"
+                        name="heizungsanlageFotos"
+                        type="file"
+                        multiple
+                        onChange={handleFileChange("heizungsanlageFotos")}
+                        accept="image/*"
+                        max="3"
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                      />
+                      <div className="border rounded px-3 py-2 bg-white text-gray-700 flex items-center min-h-[40px]">
+                        {formData.heizungsanlageFotos.length > 0 ? formData.heizungsanlageFotos.map(f => f.name).join(', ') : 'Dateien auswählen...'}
+                      </div>
+                    </label>
                     <div className="flex items-center mt-2">
                       <Checkbox
                         id="verzichtAufHeizungsanlageFotos"
@@ -1350,22 +1349,21 @@ export default function HeizungsplaketteMaske() {
                     <Label htmlFor="heizungsetiketteFotos" className="font-semibold">
                       Fotos der Typenschildes (max. 3)
                     </Label>
-                    <Input
-                      id="heizungsetiketteFotos"
-                      name="heizungsetiketteFotos"
-                      type="file"
-                      multiple
-                      onChange={handleFileChange("heizungsetiketteFotos")}
-                      accept="image/*"
-                      max="3"
-                    />
-                    {formData.heizungsetiketteFotos.length > 0 && (
-                      <ul className="text-xs text-gray-600 mt-1">
-                        {formData.heizungsetiketteFotos.map((file, idx) => (
-                          <li key={idx}>{file.name}</li>
-                        ))}
-                      </ul>
-                    )}
+                    <label className="block relative cursor-pointer">
+                      <input
+                        id="heizungsetiketteFotos"
+                        name="heizungsetiketteFotos"
+                        type="file"
+                        multiple
+                        onChange={handleFileChange("heizungsetiketteFotos")}
+                        accept="image/*"
+                        max="3"
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                      />
+                      <div className="border rounded px-3 py-2 bg-white text-gray-700 flex items-center min-h-[40px]">
+                        {formData.heizungsetiketteFotos.length > 0 ? formData.heizungsetiketteFotos.map(f => f.name).join(', ') : 'Dateien auswählen...'}
+                      </div>
+                    </label>
                     <div className="flex items-center mt-2">
                       <Checkbox
                         id="verzichtAufHeizungsetiketteFotos"
@@ -1383,21 +1381,20 @@ export default function HeizungsplaketteMaske() {
                       <Label htmlFor="heizungslabelFotos" className="font-semibold">
                         Foto des Heizungslabels (max. 1)
                       </Label>
-                      <Input
-                        id="heizungslabelFotos"
-                        name="heizungslabelFotos"
-                        type="file"
-                        onChange={handleFileChange("heizungslabelFotos")}
-                        accept="image/*"
-                        max="1"
-                      />
-                      {formData.heizungslabelFotos.length > 0 && (
-                        <ul className="text-xs text-gray-600 mt-1">
-                          {formData.heizungslabelFotos.map((file, idx) => (
-                            <li key={idx}>{file.name}</li>
-                          ))}
-                        </ul>
-                      )}
+                      <label className="block relative cursor-pointer">
+                        <input
+                          id="heizungslabelFotos"
+                          name="heizungslabelFotos"
+                          type="file"
+                          onChange={handleFileChange("heizungslabelFotos")}
+                          accept="image/*"
+                          max="1"
+                          className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                        />
+                        <div className="border rounded px-3 py-2 bg-white text-gray-700 flex items-center min-h-[40px]">
+                          {formData.heizungslabelFotos.length > 0 ? formData.heizungslabelFotos.map(f => f.name).join(', ') : 'Dateien auswählen...'}
+                        </div>
+                      </label>
                       <div className="flex items-center mt-2">
                         <Checkbox
                           id="verzichtAufHeizungslabelFotos"
@@ -1415,22 +1412,21 @@ export default function HeizungsplaketteMaske() {
                     <Label htmlFor="bedienungsanleitungFotos" className="font-semibold">
                       Fotos der Bedienungsanleitung (max. 3)
                     </Label>
-                    <Input
-                      id="bedienungsanleitungFotos"
-                      name="bedienungsanleitungFotos"
-                      type="file"
-                      multiple
-                      onChange={handleFileChange("bedienungsanleitungFotos")}
-                      accept="image/*"
-                      max="3"
-                    />
-                    {formData.bedienungsanleitungFotos.length > 0 && (
-                      <ul className="text-xs text-gray-600 mt-1">
-                        {formData.bedienungsanleitungFotos.map((file, idx) => (
-                          <li key={idx}>{file.name}</li>
-                        ))}
-                      </ul>
-                    )}
+                    <label className="block relative cursor-pointer">
+                      <input
+                        id="bedienungsanleitungFotos"
+                        name="bedienungsanleitungFotos"
+                        type="file"
+                        multiple
+                        onChange={handleFileChange("bedienungsanleitungFotos")}
+                        accept="image/*"
+                        max="3"
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                      />
+                      <div className="border rounded px-3 py-2 bg-white text-gray-700 flex items-center min-h-[40px]">
+                        {formData.bedienungsanleitungFotos.length > 0 ? formData.bedienungsanleitungFotos.map(f => f.name).join(', ') : 'Dateien auswählen...'}
+                      </div>
+                    </label>
                     <div className="flex items-center mt-2">
                       <Checkbox
                         id="verzichtAufBedienungsanleitungFotos"
