@@ -42,7 +42,29 @@ export async function POST(request: Request): Promise<NextResponse> {
         const text = await res.text();
         return NextResponse.json({ error: `Old blob delete failed: ${text}` }, { status: res.status });
       }
-      // If 404 or 405, treat as success (idempotent delete)
+      // Wait for deletion to propagate (HEAD returns 404)
+      let deleted = false;
+      let tries = 0;
+      const maxTries = 5;
+      const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+      while (!deleted && tries < maxTries) {
+        const headResp = await fetch(deleteUrl, {
+          method: 'HEAD',
+          headers: {
+            Authorization: `Bearer ${blobToken}`,
+            'x-api-version': '6',
+          },
+        });
+        if (headResp.status === 404) {
+          deleted = true;
+          break;
+        }
+        tries++;
+        await delay(1000);
+      }
+      if (!deleted) {
+        return NextResponse.json({ error: 'Old blob could not be confirmed deleted.' }, { status: 500 });
+      }
     } catch (error) {
       return NextResponse.json({ error: (error instanceof Error ? error.message : 'Unknown error deleting old blob') }, { status: 500 });
     }
@@ -50,7 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   try {
     // Use Vercel Blob SDK's put function to upload the new file
-    const blob = await put(pathname, file, { access: 'public', allowOverwrite });
+    const blob = await put(pathname, file, { access: 'public', allowOverwrite: true });
 
     // If this is a new PDF creation (not a regeneration), update the database
     if (isNewPdf && itemId) {
