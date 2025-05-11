@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { upload } from '@vercel/blob/client'
+import React from 'react'
 
 type HeizungsplaketteItem = {
   id: number;
@@ -97,6 +98,8 @@ export default function Page() {
   const [mounted, setMounted] = useState(false)
   const [pdfGeneratingItemId, setPdfGeneratingItemId] = useState<number | null>(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [imageRotations, setImageRotations] = useState<{ [url: string]: number }>({});
+  const [regeneratingPdf, setRegeneratingPdf] = useState(false);
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -389,6 +392,45 @@ export default function Page() {
     }
   };
 
+  // Helper to get all images for the current previewed item
+  const getAllImagesForPreview = () => {
+    const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl);
+    if (!item) return [];
+    return [
+      ...(item.heizungsanlageFotos || []).map(url => ({ url, label: 'Foto zur Heizungsanlage' })),
+      ...(item.heizungsetiketteFotos || []).map(url => ({ url, label: 'Foto zum Typenschild' })),
+      ...(item.heizungslabelFotos || []).map(url => ({ url, label: 'Foto zum Heizungslabel' })),
+      ...(item.bedienungsanleitungFotos || []).map(url => ({ url, label: 'Foto zur Bedienungsanleitung' })),
+    ];
+  };
+
+  const handleSetRotation = (url: string, deg: number) => {
+    setImageRotations(prev => ({ ...prev, [url]: deg }));
+  };
+
+  const handleRegeneratePdf = async () => {
+    const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl);
+    if (!item) return;
+    setRegeneratingPdf(true);
+    try {
+      // Send imageRotations as JSON in POST body
+      const response = await fetch(`/api/create_pdf?id=${item.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageRotations }),
+      });
+      if (!response.ok) throw new Error('Fehler beim PDF-Update');
+      const pdfBlob = await response.blob();
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      setPdfPreviewUrl(pdfUrl);
+      toast({ title: 'PDF neu generiert', description: 'Das PDF wurde mit den gewählten Rotationen neu erstellt.' });
+    } catch (e) {
+      toast({ title: 'Fehler', description: 'PDF konnte nicht neu generiert werden.', variant: 'destructive' });
+    } finally {
+      setRegeneratingPdf(false);
+    }
+  };
+
   if (isLoading || !mounted) {
     return <LoadingSpinner />
   }
@@ -447,17 +489,46 @@ export default function Page() {
             <DialogHeader>
               <DialogTitle className="dark:text-gray-200">PDF Vorschau</DialogTitle>
             </DialogHeader>
-            {pdfPreviewUrl && (
-              <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                <iframe
-                  src={pdfPreviewUrl}
-                  width="100%"
-                  height="700"
-                  style={{ border: 'none' }}
-                  title="PDF Preview"
-                />
+            <div className="flex gap-8">
+              <div className="flex-1 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                {pdfPreviewUrl && (
+                  <iframe
+                    src={pdfPreviewUrl}
+                    width="100%"
+                    height="700"
+                    style={{ border: 'none' }}
+                    title="PDF Preview"
+                  />
+                )}
               </div>
-            )}
+              <div className="w-80 flex flex-col gap-4">
+                {getAllImagesForPreview().map(({ url, label }, idx) => (
+                  <div key={url} className="border p-2 rounded mb-2">
+                    <div className="font-semibold mb-1">{label} {idx + 1}</div>
+                    <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" />
+                    <div className="flex gap-2 justify-between">
+                      {[0, 90, 180, 270].map(deg => (
+                        <Button
+                          key={deg}
+                          variant={imageRotations[url] === deg ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleSetRotation(url, deg)}
+                        >
+                          {deg}&deg;
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  onClick={handleRegeneratePdf}
+                  disabled={regeneratingPdf}
+                  className="mt-4 w-full dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white"
+                >
+                  {regeneratingPdf ? 'PDF wird neu generiert...' : 'PDF neu generieren'}
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 
