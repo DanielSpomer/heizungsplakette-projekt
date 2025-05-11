@@ -342,8 +342,11 @@ export default function Page() {
         throw new Error('Item not found');
       }
       
+      // Always update the preview URL with a cache-busting query string
+      const cacheBustedUrl = `${newBlobResult.url}?t=${Date.now()}`;
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
-      setPdfPreviewUrl(newBlobResult.url);
+      setPdfPreviewUrl(null); // Force iframe to unmount
+      setTimeout(() => setPdfPreviewUrl(cacheBustedUrl), 50); // Remount with new URL
       toast({ 
         title: 'PDF neu generiert', 
         description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
@@ -484,8 +487,11 @@ export default function Page() {
         throw new Error('Item not found');
       }
       
+      // Always update the preview URL with a cache-busting query string
+      const cacheBustedUrl = `${newBlobResult.url}?t=${Date.now()}`;
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
-      setPdfPreviewUrl(newBlobResult.url);
+      setPdfPreviewUrl(null); // Force iframe to unmount
+      setTimeout(() => setPdfPreviewUrl(cacheBustedUrl), 50); // Remount with new URL
       toast({ 
         title: 'PDF neu generiert', 
         description: pdfAvailable ? 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' : 'Das PDF wurde erstellt, aber ist eventuell noch nicht sofort verfügbar.' 
