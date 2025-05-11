@@ -86,23 +86,25 @@ def parse_date(date_str):
 def create_overlay(fields, width=A4[0], height=A4[1]):
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=(width, height))
-    # Assume fonts are registered or standard if not using custom ones that need to be deployed
-    # pdfmetrics.registerFont(TTFont('Montserrat', 'Montserrat-Regular.ttf'))
-    # pdfmetrics.registerFont(TTFont('Montserrat-Bold', 'Montserrat-Bold.ttf'))
     c.setFillColorRGB(0, 0, 0)
 
     for field in fields:
         if len(field) > 7 and field[7] == "image":
             try:
-                # Ensure image paths (field[0]) are accessible in serverless
+                print(f"DEBUG: Attempting to draw image at position ({field[1]}, {field[2]}) with size {field[8]}x{field[9]}")
+                # Ensure the image data is at the start of the BytesIO
+                field[0].seek(0)
                 c.drawImage(field[0], field[1], field[2], width=field[8], height=field[9], mask='auto')
+                print("DEBUG: Image drawn successfully")
             except Exception as e:
-                print(f"⚠️ Error loading image '{field[0]}' for overlay: {e}")
+                print(f"⚠️ Error drawing image in overlay: {e}")
+                import traceback
+                print(traceback.format_exc())
             continue
 
         text, x, y, align, size, weight, max_width = field[:7]
         font = "Montserrat-Bold" if weight == "bold" else "Montserrat"
-        text = str(text if text is not None else "") # Handle None from DB
+        text = str(text if text is not None else "")
 
         while size > 4 and max_width and c.stringWidth(text, font, size) > max_width:
             size -= 0.5
@@ -293,6 +295,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
                 # Download image from URL
                 response = requests.get(url)
                 if response.status_code == 200:
+                    print(f"DEBUG: Successfully downloaded image from {url}")
                     img_data = BytesIO(response.content)
                     img = Image.open(img_data)
                     width, height = img.size
@@ -303,6 +306,11 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
                     x_pos = A4[0] / 2 - img_w / 2
                     y_pos = y_top - j * (img_h + 60)
                     
+                    print(f"DEBUG: Image dimensions - Original: {width}x{height}, Scaled: {img_w}x{img_h}")
+                    print(f"DEBUG: Image position - x: {x_pos}, y: {y_pos}")
+                    
+                    # Reset the BytesIO position before adding to fields
+                    img_data.seek(0)
                     fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
                     fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
                     print(f"DEBUG: Successfully added image to page {page_idx}")
