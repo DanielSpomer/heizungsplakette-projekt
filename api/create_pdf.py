@@ -405,6 +405,39 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(error_response).encode('utf-8'))
         return
 
+    def do_POST(self):
+        """Handle POST requests for PDF recreation with rotated images."""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            item_id = data.get('id')
+            image_rotations = data.get('image_rotations', {})
+            
+            if not item_id:
+                self.send_response(400)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'Missing id parameter'}).encode('utf-8'))
+                return
+
+            pdf_bytes = recreate_pdf_with_rotated_images(item_id, image_rotations)
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'application/pdf')
+            self.send_header('Content-Disposition', f'attachment; filename="heizungsplakette_{item_id}_rotated.pdf"')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(pdf_bytes)
+
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            error_response = {'error': f'Failed to recreate PDF: {str(e)}'}
+            self.wfile.write(json.dumps(error_response).encode('utf-8'))
+
 # --- Command-Line Execution Block --- #
 if __name__ == "__main__":
     # Setup argument parser
@@ -467,3 +500,128 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"ERROR: An unexpected error occurred - {str(e)}")
         sys.exit(1)
+
+# Add after the scale_image function
+def rotate_image(image_data, rotation_degrees):
+    """Rotate an image by specified degrees."""
+    try:
+        img = Image.open(image_data)
+        rotated_img = img.rotate(rotation_degrees, expand=True)
+        output = BytesIO()
+        rotated_img.save(output, format='JPEG')
+        output.seek(0)
+        return output
+    except Exception as e:
+        print(f"⚠️ Error rotating image: {e}")
+        return image_data
+
+def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
+    """
+    Recreate PDF with rotated images.
+    image_rotations: dict of image URLs and their rotation degrees (90, 180, 270)
+    """
+    try:
+        # Fetch the original data
+        data = fetch_heizungsplakette_data(item_id)
+        if not data:
+            raise ValueError(f"No data found for ID: {item_id}")
+
+        # Process images with rotations
+        img_sources = []
+        def add_imgs_with_rotation(key_name, label):
+            urls = safe_split(data.get(key_name))
+            for url in urls:
+                if url and url.startswith('http'):
+                    rotation = image_rotations.get(url, 0) if image_rotations else 0
+                    img_sources.append((url, label, rotation))
+
+        add_imgs_with_rotation("heizungsanlageFotos", "Foto zur Heizungsanlage")
+        add_imgs_with_rotation("heizungsetiketteFotos", "Foto zum Typenschild")
+        add_imgs_with_rotation("heizungslabelFotos", "Foto zum Heizungslabel")
+        add_imgs_with_rotation("bedienungsanleitungFotos", "Foto zur Bedienungsanleitung")
+
+        # Generate PDF with rotated images
+        script_dir = os.path.dirname(__file__)
+        template_path = os.path.join(script_dir, "template_blanco.pdf")
+        
+        # Register fonts
+        font_base_path = os.path.join(script_dir, "fonts")
+        montserrat_regular_path = os.path.join(font_base_path, "Montserrat-Regular.ttf")
+        montserrat_bold_path = os.path.join(font_base_path, "Montserrat-Bold.ttf")
+        pdfmetrics.registerFont(TTFont('Montserrat', montserrat_regular_path))
+        pdfmetrics.registerFont(TTFont('Montserrat-Bold', montserrat_bold_path))
+
+        template_reader = PdfReader(template_path)
+        writer = PdfWriter()
+
+        # Create fields dictionary with rotated images
+        fields = {
+            0: [
+                (f"{data.get('strasse', '')} {data.get('hausnummer', '')},", 298, 494, 'center', 20, "bold", 210),
+                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 298, 474, 'center', 20, "bold", 210),
+                # ... rest of the fields for page 0 ...
+            ],
+            1: [
+                (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
+                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
+            ]
+        }
+
+        # Add image pages with rotations
+        img_groups = [img_sources[i:i+2] for i in range(0, len(img_sources), 2)]
+        num_pages = min(7, 2 + (len(img_sources) + 1) // 2)
+
+        for i, group in enumerate(img_groups):
+            page_idx = i + 2
+            if page_idx >= num_pages:
+                break
+
+            fields[page_idx] = [
+                (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
+                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
+            ]
+
+            y_top = 460
+            for j, (url, label, rotation) in enumerate(group):
+                try:
+                    response = requests.get(url)
+                    if response.status_code == 200:
+                        img_data = BytesIO(response.content)
+                        
+                        # Apply rotation if specified
+                        if rotation != 0:
+                            img_data = rotate_image(img_data, rotation)
+                        
+                        img = Image.open(img_data)
+                        width, height = img.size
+                        ratio = 180 / height
+                        img_w = int(width * ratio)
+                        img_h = 180
+
+                        x_pos = A4[0] / 2 - img_w / 2
+                        y_pos = y_top - j * (img_h + 60)
+
+                        img_data.seek(0)
+                        fields[page_idx].append((label, A4[0]/2, y_pos + img_h + 15, 'center', 11, 'bold', 200))
+                        fields[page_idx].append((img_data, x_pos, y_pos, '', 0, '', 0, 'image', img_w, img_h))
+                except Exception as e:
+                    print(f"⚠️ Error processing image {url}: {e}")
+
+        # Create PDF with all pages
+        for i in range(num_pages):
+            if i < len(template_reader.pages):
+                page = template_reader.pages[i]
+                if i in fields:
+                    overlay = create_overlay(fields[i])
+                    page.merge_page(overlay.pages[0])
+                writer.add_page(page)
+
+        pdf_buffer = BytesIO()
+        writer.write(pdf_buffer)
+        pdf_bytes = pdf_buffer.getvalue()
+        pdf_buffer.close()
+        return pdf_bytes
+
+    except Exception as e:
+        print(f"⚠️ Error recreating PDF: {e}")
+        raise
