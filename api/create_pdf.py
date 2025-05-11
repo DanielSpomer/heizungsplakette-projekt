@@ -407,6 +407,8 @@ class handler(BaseHTTPRequestHandler):
         try:
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
+            print(f"[DEBUG] Raw POST body: {post_data}")
+            print(f"[DEBUG] Headers: {self.headers}")
             data = json.loads(post_data.decode('utf-8'))
             
             item_id = data.get('id')
