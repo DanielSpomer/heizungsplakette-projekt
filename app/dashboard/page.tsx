@@ -414,18 +414,47 @@ export default function Page() {
     setRegeneratingPdf(true);
     try {
       // Debug log
-      console.log('Sending imageRotations:', imageRotations);
-      // Send imageRotations as JSON in POST body
+      console.log('Sending image_rotations:', imageRotations);
+      // Send image_rotations as JSON in POST body
       const response = await fetch(`/api/create_pdf?id=${item.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageRotations, id: item.id }),
+        body: JSON.stringify({ image_rotations: imageRotations, id: item.id }),
       });
       if (!response.ok) throw new Error('Fehler beim PDF-Update');
       const pdfBlob = await response.blob();
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      setPdfPreviewUrl(pdfUrl); // Update the preview with the new PDF
-      toast({ title: 'PDF neu generiert', description: 'Das PDF wurde mit den gewählten Rotationen neu erstellt.' });
+      // Upload new PDF to Vercel Blob
+      const blobPathname = `pdfs/heizungsplakette-${item.id}-regenerated.pdf`;
+      const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}-regenerated.pdf`, { type: 'application/pdf' });
+      const newBlobResult = await upload(blobPathname, pdfFile, {
+        access: 'public',
+        handleUploadUrl: '/api/blob-upload',
+      });
+      // Delete old PDF from Blob storage if exists
+      if (item.pdfUrl) {
+        try {
+          await fetch('/api/delete-blob', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: item.pdfUrl }),
+          });
+        } catch (e) {
+          console.warn('Failed to delete old PDF from blob:', e);
+        }
+      }
+      // Update DB with new PDF URL
+      const updateResponse = await fetch('/api/update-record-pdf', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: String(item.id), pdfUrl: newBlobResult.url }),
+      });
+      if (!updateResponse.ok) {
+        throw new Error('Fehler beim Aktualisieren der PDF-URL in der Datenbank');
+      }
+      // Update local state and preview
+      setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
+      setPdfPreviewUrl(newBlobResult.url);
+      toast({ title: 'PDF neu generiert', description: 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' });
     } catch (e) {
       toast({ title: 'Fehler', description: 'PDF konnte nicht neu generiert werden.', variant: 'destructive' });
     } finally {
@@ -503,24 +532,28 @@ export default function Page() {
               )}
             </div>
             <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4">
-              {getAllImagesForPreview().map(({ url, label }, idx) => (
-                <div key={url} className="border p-2 rounded mb-2">
-                  <div className="font-semibold mb-1">{label} {idx + 1}</div>
-                  <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" />
-                  <div className="flex gap-2 justify-between">
-                    {[0, 90, 180, 270].map(deg => (
-                      <Button
-                        key={deg}
-                        variant={imageRotations[url] === deg ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleSetRotation(url, deg)}
-                      >
-                        {deg}&deg;
-                      </Button>
-                    ))}
+              {(function() {
+                const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl) || heizungsplaketten.find(p => String(p.id) === String(pdfPreviewUrl?.split('-')[1]));
+                if (!item) return null;
+                return getAllImagesForPreview().map(({ url, label }, idx) => (
+                  <div key={url} className="border p-2 rounded mb-2">
+                    <div className="font-semibold mb-1">{label} {idx + 1}</div>
+                    <img src={url} alt={label} className="w-full h-24 object-contain mb-2 bg-gray-100" />
+                    <div className="flex gap-2 justify-between">
+                      {[0, 90, 180, 270].map(deg => (
+                        <Button
+                          key={deg}
+                          variant={imageRotations[url] === deg ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleSetRotation(url, deg)}
+                        >
+                          {deg}&deg;
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
               <Button
                 onClick={handleRegeneratePdf}
                 disabled={regeneratingPdf}
