@@ -309,8 +309,11 @@ export default function Page() {
       console.log('pathname:', blobPathname);
       const formData = new FormData();
       formData.append('file', pdfFile);
-      if (item && item.pdfUrl) {
-        formData.append('oldUrl', item.pdfUrl);
+      const previousPdfUrl = heizungsplaketten.find(p => String(p.id) === String(itemId))?.pdfUrl;
+      console.log('✅ Using previousPdfUrl fallback:', previousPdfUrl);
+
+      if (previousPdfUrl) {
+        formData.append('oldUrl', previousPdfUrl);
       }
       formData.append('pathname', blobPathname);
       formData.append('itemId', String(itemId));
