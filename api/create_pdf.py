@@ -16,6 +16,8 @@ import psycopg2
 import requests
 import argparse
 from dotenv import load_dotenv, find_dotenv
+import tempfile
+import traceback
 
 # --- Global Settings --- #
 TEST_MODE = False # Tkinter GUI and local file opening will be disabled
@@ -92,14 +94,20 @@ def create_overlay(fields, width=A4[0], height=A4[1]):
         if len(field) > 7 and field[7] == "image":
             try:
                 print(f"DEBUG: Attempting to draw image at position ({field[1]}, {field[2]}) with size {field[8]}x{field[9]}")
-                # Ensure the image data is at the start of the BytesIO
-                field[0].seek(0)
-                c.drawImage(field[0], field[1], field[2], width=field[8], height=field[9], mask='auto')
-                print("DEBUG: Image drawn successfully")
+                # Get the image data from BytesIO
+                image_data = field[0].getvalue()
+                # Create a temporary file to store the image
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+                    temp_file.write(image_data)
+                    temp_file.flush()
+                    # Draw the image using the temporary file path
+                    c.drawImage(temp_file.name, field[1], field[2], width=field[8], height=field[9], mask='auto')
+                # Clean up the temporary file
+                os.unlink(temp_file.name)
+                print("DEBUG: Successfully added image to overlay")
             except Exception as e:
-                print(f"⚠️ Error drawing image in overlay: {e}")
-                import traceback
-                print(traceback.format_exc())
+                print(f"⚠️ Error drawing image in overlay: {str(e)}")
+                print(f"Traceback:\n{traceback.format_exc()}")
             continue
 
         text, x, y, align, size, weight, max_width = field[:7]
