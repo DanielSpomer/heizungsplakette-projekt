@@ -423,6 +423,7 @@ export default function Page() {
       });
       if (!response.ok) throw new Error('Fehler beim PDF-Update');
       const pdfBlob = await response.blob();
+      
       // Upload new PDF to Vercel Blob
       const blobPathname = `pdfs/heizungsplakette-${item.id}-regenerated.pdf`;
       const pdfFile = new File([pdfBlob], `heizungsplakette-${item.id}-regenerated.pdf`, { type: 'application/pdf' });
@@ -430,33 +431,58 @@ export default function Page() {
         access: 'public',
         handleUploadUrl: '/api/blob-upload',
       });
+
       // Delete old PDF from Blob storage if exists
       if (item.pdfUrl) {
         try {
-          await fetch('/api/delete-blob', {
+          const deleteResponse = await fetch('/api/delete-blob', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: item.pdfUrl }),
           });
-        } catch (e) {
-          console.warn('Failed to delete old PDF from blob:', e);
+          
+          if (!deleteResponse.ok) {
+            const errorData = await deleteResponse.json().catch(() => ({ error: "Failed to parse error response" }));
+            console.error('Failed to delete old PDF:', errorData);
+            throw new Error(`Failed to delete old PDF: ${errorData.error || deleteResponse.statusText}`);
+          }
+          
+          // Wait for deletion to complete
+          await deleteResponse.json();
+          console.log('Successfully deleted old PDF');
+        } catch (deleteError: unknown) {
+          console.error('Error deleting old PDF:', deleteError);
+          const errorMessage = deleteError instanceof Error ? deleteError.message : 'Unknown error';
+          throw new Error(`Failed to delete old PDF: ${errorMessage}`);
         }
       }
+
       // Update DB with new PDF URL
       const updateResponse = await fetch('/api/update-record-pdf', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: String(item.id), pdfUrl: newBlobResult.url }),
       });
+      
       if (!updateResponse.ok) {
         throw new Error('Fehler beim Aktualisieren der PDF-URL in der Datenbank');
       }
+
       // Update local state and preview
       setHeizungsplaketten(prev => prev.map(p => String(p.id) === String(item.id) ? { ...p, pdfUrl: newBlobResult.url } : p));
       setPdfPreviewUrl(newBlobResult.url);
-      toast({ title: 'PDF neu generiert', description: 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' });
-    } catch (e) {
-      toast({ title: 'Fehler', description: 'PDF konnte nicht neu generiert werden.', variant: 'destructive' });
+      toast({ 
+        title: 'PDF neu generiert', 
+        description: 'Das PDF wurde mit den gewählten Rotationen neu erstellt und gespeichert.' 
+      });
+    } catch (e: unknown) {
+      console.error('Error during PDF regeneration:', e);
+      const errorMessage = e instanceof Error ? e.message : 'PDF konnte nicht neu generiert werden.';
+      toast({ 
+        title: 'Fehler', 
+        description: errorMessage, 
+        variant: 'destructive' 
+      });
     } finally {
       setRegeneratingPdf(false);
     }
