@@ -628,21 +628,34 @@ export default function Page() {
               )}
             </div>
             <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4 pdf-rotation-scroll">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {getAllImagesForPreview().map(({ url, label }: { url: string; label: string }, index: number) => (
-                  <div key={index} className="relative group">
+              {getAllImagesForPreview().map(({ url, label }: { url: string; label: string }, index: number) => (
+                <div key={url} className="border p-3 rounded-lg mb-3 shadow-sm dark:border-gray-600 bg-white dark:bg-gray-800 w-full">
+                  <div className="font-semibold mb-2 text-sm text-gray-700 dark:text-gray-300">{label} {index + 1}</div>
+                  <div className="relative w-full h-40 md:h-48 mb-3 bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center overflow-hidden rounded-md">
                     <Image
                       src={url}
                       alt={`${label} ${index + 1}`}
-                      width={100} 
-                      height={100}
-                      className="w-full h-auto object-cover rounded-md shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                      width={300} 
+                      height={225} 
+                      className="max-w-full max-h-full object-contain"
                       style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }}
-                      onClick={() => { /* TODO: Implement larger preview or specific action */ }}
                     />
                   </div>
-                ))}
-              </div>
+                  <div className="flex gap-2 justify-between">
+                    {[0, 90, 180, 270].map(deg => (
+                      <Button
+                        key={deg}
+                        variant={(imageRotations[url] || 0) === deg ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSetRotation(url, deg)}
+                        className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                      >
+                        {deg}°
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ))}
               <Button
                 onClick={handleRegeneratePdf}
                 disabled={regeneratingPdf}
