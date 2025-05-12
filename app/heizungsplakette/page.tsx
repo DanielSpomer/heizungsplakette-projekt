@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, { Fragment, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,10 +11,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import {ClipboardList, Home, MapPin, Camera, CheckCircle, CreditCard, Thermometer, Building, Calendar, FileText, User, Key, Factory, HelpCircle} from "lucide-react"
+import {ClipboardList, Home, MapPin, Camera, CheckCircle, CreditCard, Thermometer, Building, Calendar, FileText, User, Key, Factory, HelpCircle, Check} from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import DatePicker from "react-datepicker"; // Import react-datepicker
 import "react-datepicker/dist/react-datepicker.css"; // Import its CSS
+import imageCompression from 'browser-image-compression'; // Import the library
 
 interface FormData {
   datenschutzUndNutzungsbedingungen: boolean
@@ -120,6 +119,7 @@ export default function HeizungsplaketteMaske() {
   const [orderId, setOrderId] = useState<string | null>(null)
   const [isPollingPaymentStatus, setIsPollingPaymentStatus] = useState(false); // New state for polling
   const [personalAddressIsSameAsPropertyAddress, setPersonalAddressIsSameAsPropertyAddress] = useState(false); // New state for address copy
+  const [isCompressing, setIsCompressing] = useState(false); // New state for compression status
 
   const router = useRouter(); // Moved router initialization up
 
@@ -301,20 +301,59 @@ export default function HeizungsplaketteMaske() {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files) {
         const maxFiles = name === "heizungslabelFotos" ? 1 : 3
-        const filesArray = Array.from(e.target.files).slice(0, maxFiles)
-        setFormData((prev) => ({ ...prev, [name]: filesArray }))
+        const inputFiles = Array.from(e.target.files).slice(0, maxFiles)
 
+        // Reset the input value so the same file can be selected for another field
+        e.target.value = ""; 
+        
         setErrors((prev) => {
           const newErrors = { ...prev }
-          if (e.target.files && e.target.files.length > maxFiles) {
+          if (inputFiles.length > maxFiles && e.target.files && e.target.files.length > maxFiles) { // Check original selection length for error
             newErrors[name] = `Maximal ${maxFiles} Foto${maxFiles > 1 ? "s" : ""} erlaubt.`
           } else {
             delete newErrors[name]
           }
           return newErrors
-        })
-        // Reset the input value so the same file can be selected for another field
-        e.target.value = ""
+        });
+
+        if (inputFiles.length === 0) {
+            setFormData((prev) => ({ ...prev, [name]: [] }));
+            return;
+        }
+        
+        setIsCompressing(true); // Indicate compression has started
+
+        const compressionOptions = {
+          maxSizeMB: 1, // Max file size in MB
+          maxWidthOrHeight: 1920, // Max width or height
+          useWebWorker: true, // Use web worker for better performance
+          initialQuality: 0.7 // Initial quality, will be adjusted by the library
+        };
+
+        const compressFiles = async () => {
+          const compressedFilesArray: File[] = [];
+          for (const file of inputFiles) {
+            try {
+              console.log(`Original file size (${file.name}): ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+              const compressedFile = await imageCompression(file, compressionOptions);
+              console.log(`Compressed file size (${compressedFile.name}): ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+              // Create a new File object with the correct name, as compression might rename it
+              compressedFilesArray.push(new File([compressedFile], file.name, { type: compressedFile.type }));
+            } catch (error) {
+              console.error("Error compressing file:", error);
+              // If compression fails, add the original file as a fallback
+              compressedFilesArray.push(file);
+              setErrors((prev) => ({
+                ...prev,
+                [name]: prev[name] ? `${prev[name]} Fehler bei der Komprimierung eines Bildes.` : `Fehler bei der Komprimierung eines Bildes.`
+              }));
+            }
+          }
+          setFormData((prev) => ({ ...prev, [name]: compressedFilesArray }));
+          setIsCompressing(false); // Indicate compression has finished
+        };
+
+        compressFiles();
       }
     }
 
@@ -643,40 +682,45 @@ export default function HeizungsplaketteMaske() {
         <div className="bg-card shadow-xl rounded-lg p-10"> {/* Increased p-6 to p-10, shadow-md to shadow-xl */}
           <h1 className="sr-only">Heizungsplakette Antragsformular</h1>
 
-          <nav aria-label="Fortschritt">
-            <ol className="flex justify-between items-center mb-1"> {/* Changed mb-12 to mb-1 */}
-              {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-                <li
-                  key={step}
-                  className={`w-1/7 text-center cursor-pointer
-                    ${
-                      currentStep === step
-                        ? "text-blue-600 font-bold"
-                        : visitedSteps.includes(step)
-                          ? "text-slate-400 font-semibold" // Changed for visited steps
-                          : "text-gray-400"
-                    }`}
-                  onClick={() => handleStepClick(step)}
-                >
-                  <button className="focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-full p-1">
-                    {step}
-                  </button>
-                </li>
-              ))}
-            </ol>
-            <div className="w-full bg-gray-200 h-2 rounded-full mt-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-in-out"
-                style={{ width: `${(currentStep / 7) * 100}%` }}
-                role="progressbar"
-                aria-valuenow={(currentStep / 7) * 100}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              ></div>
+          <nav aria-label="Fortschritt" className="mb-12"> {/* Added mb-12 here for overall spacing below nav */}
+            <div className="flex items-center w-full">
+              {[1, 2, 3, 4, 5, 6, 7].map((stepValue, index, arr) => {
+                const isCurrent = currentStep === stepValue;
+                const isVisited = visitedSteps.includes(stepValue);
+                const isCompleted = isVisited && !isCurrent;
+
+                return (
+                  <Fragment key={stepValue}>
+                    <button
+                      onClick={() => handleStepClick(stepValue)}
+                      className={`
+                        w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ease-in-out
+                        focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-background
+                        ${isCurrent ? 'border-blue-500 bg-blue-500 ring-blue-500' : /* Changed bg-white to bg-blue-500 */
+                          isCompleted ? 'border-slate-400 bg-slate-300 ring-slate-400' :
+                          'border-gray-300 bg-white hover:border-gray-400 ring-gray-300'
+                        }
+                      `}
+                      aria-current={isCurrent ? 'step' : undefined}
+                      aria-label={`Schritt ${stepValue}`}
+                    >
+                      {isCompleted && <Check className="w-4 h-4 text-blue-600" />}
+                    </button>
+
+                    {index < arr.length - 1 && (
+                      <div className={`
+                        flex-1 h-0.5 transition-colors duration-300 ease-in-out
+                        ${currentStep > stepValue ? 'bg-blue-500' : 'bg-gray-300'}
+                      `}></div>
+                    )}
+                  </Fragment>
+                );
+              })}
             </div>
+            {/* Old ol and progress bar div removed */}
           </nav>
 
-          <form onSubmit={handleSubmit} className="space-y-8 mt-8"> {/* Changed mt-16 to mt-8 */}
+          <form onSubmit={handleSubmit} className="space-y-8 mt-8"> {/* mt-8 provides space below new progress indicator */}
             {currentStep === 1 && (
               <div className="step-content-animate-in">
                 <fieldset>
@@ -1766,7 +1810,13 @@ export default function HeizungsplaketteMaske() {
                 <Button type="button" onClick={handleBack} variant="outline" className="transition-all duration-200 ease-out transform hover:shadow-md hover:-translate-y-px active:shadow-sm active:translate-y-0">
                   Zurück
                 </Button>
-                <Button type="submit" className="transition-all duration-200 ease-out transform hover:shadow-lg hover:-translate-y-0.5 active:shadow-md active:translate-y-0">{currentStep < 6 ? "Weiter" : "Angaben speichern und zur Bezahlung"}</Button>
+                <Button 
+                  type="submit" 
+                  className="transition-all duration-200 ease-out transform hover:shadow-lg hover:-translate-y-0.5 active:shadow-md active:translate-y-0"
+                  disabled={isCompressing || isSubmitting} // Disable button if compressing or submitting
+                >
+                  {isCompressing ? "Bilder werden verarbeitet..." : (currentStep < 6 ? "Weiter" : "Angaben speichern und zur Bezahlung")}
+                </Button>
               </div>
             )}
           </form>
