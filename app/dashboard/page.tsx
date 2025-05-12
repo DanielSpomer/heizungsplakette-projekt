@@ -629,11 +629,11 @@ export default function Page() {
             </div>
             <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4 pdf-rotation-scroll">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {getAllImagesForPreview().map((url: string, index: number) => (
+                {getAllImagesForPreview().map(({ url, label }: { url: string; label: string }, index: number) => (
                   <div key={index} className="relative group">
                     <Image
                       src={url}
-                      alt={`Vorschau Bild ${index + 1}`}
+                      alt={`${label} ${index + 1}`}
                       width={100} 
                       height={100}
                       className="w-full h-auto object-cover rounded-md shadow-md cursor-pointer hover:opacity-80 transition-opacity"
