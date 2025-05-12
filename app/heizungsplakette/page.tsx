@@ -15,6 +15,8 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {ClipboardList, Home, MapPin, Camera, CheckCircle, CreditCard, Thermometer, Building, Calendar, FileText, User, Key, Factory, HelpCircle} from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import DatePicker from "react-datepicker"; // Import react-datepicker
+import "react-datepicker/dist/react-datepicker.css"; // Import its CSS
 
 interface FormData {
   datenschutzUndNutzungsbedingungen: boolean
@@ -270,9 +272,16 @@ export default function HeizungsplaketteMaske() {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "baujahr" ? value : value,
+      [name]: value, // Simpler assignment, ensure type consistency elsewhere
     }))
   }
+
+  const handleDateChange = (date: Date | null, name: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: date ? date.toISOString().split('T')[0] : "", // Store as YYYY-MM-DD string
+    }));
+  };
 
   const handleSelectChange = (name: string) => (value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -1281,14 +1290,20 @@ export default function HeizungsplaketteMaske() {
                         <Label htmlFor="energieausweisDate" className="font-semibold block mb-2"> {/* Added block mb-2 */}
                           Datum des Energieausweises *
                         </Label>
-                        <Input
+                        <DatePicker
                           id="energieausweisDate"
-                          name="energieausweisDate"
-                          type="date"
-                          value={formData.energieausweisDate}
-                          onChange={handleInputChange}
+                          selected={formData.energieausweisDate ? new Date(formData.energieausweisDate) : null}
+                          onChange={(date) => handleDateChange(date, "energieausweisDate")}
+                          dateFormat="dd/MM/yyyy"
+                          className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                          placeholderText="TT/MM/JJJJ"
+                          showYearDropdown
+                          scrollableYearDropdown
+                          yearDropdownItemNumber={100}
+                          maxDate={new Date()} // Prevent future dates
+                          popperPlacement="bottom-start"
                         />
-                        {errors.energieausweisDate && <p className="text-red-500 text-sm mt-1">{errors.energieausweisDate}</p>} {/* Added text-sm, mt-1 */}
+                        {errors.energieausweisDate && <p className="text-red-500 text-sm mt-1">{errors.energieausweisDate}</p>}
                       </div>
                     )}
                   </div>
