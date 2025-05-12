@@ -28,6 +28,7 @@ import 'react-pdf/dist/esm/Page/TextLayer.css';
 // pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 pdfjs.GlobalWorkerOptions.workerSrc = `/pdfjs-dist/build/pdf.worker.min.mjs`;
 
+// Re-inserting the type definition and helper functions
 type HeizungsplaketteItem = {
   id: number;
   datenschutzUndNutzungsbedingungen: boolean;
@@ -92,9 +93,8 @@ const LoadingSpinner = () => (
   </div>
 );
 
-
-
 export default function Page() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [heizungsplaketten, setHeizungsplaketten] = useState<HeizungsplaketteItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [editingItem, setEditingItem] = useState<HeizungsplaketteItem | null>(null)
@@ -110,6 +110,30 @@ export default function Page() {
   const [imageRotations, setImageRotations] = useState<{ [url: string]: number }>({});
   const [regeneratingPdf, setRegeneratingPdf] = useState(false);
   const [numPages, setNumPages] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Authentication check
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/status');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.isAuthenticated) {
+            setIsAuthenticated(true);
+          } else {
+            router.push('/login');
+          }
+        } else {
+          // Handle non-200 responses from auth status, e.g., server error
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Failed to check auth status:', error);
+        router.push('/login'); // Redirect on error as well
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   const fetchHeizungsplaketten = useCallback(async () => {
     try {
@@ -384,13 +408,13 @@ export default function Page() {
 
   // Helper to get all images for the current previewed item
   const getAllImagesForPreview = () => {
-    const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl);
+    const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl) || heizungsplaketten.find(p => String(p.id) === String(pdfPreviewUrl?.split('-')[1]));
     if (!item) return [];
     return [
-      ...(item.heizungsanlageFotos || []).map(url => ({ url, label: 'Foto zur Heizungsanlage' })),
-      ...(item.heizungsetiketteFotos || []).map(url => ({ url, label: 'Foto zum Typenschild' })),
-      ...(item.heizungslabelFotos || []).map(url => ({ url, label: 'Foto zum Heizungslabel' })),
-      ...(item.bedienungsanleitungFotos || []).map(url => ({ url, label: 'Foto zur Bedienungsanleitung' })),
+      ...(item.heizungsanlageFotos || []).map((url: string) => ({ url, label: 'Foto zur Heizungsanlage' })),
+      ...(item.heizungsetiketteFotos || []).map((url: string) => ({ url, label: 'Foto zum Typenschild' })),
+      ...(item.heizungslabelFotos || []).map((url: string) => ({ url, label: 'Foto zum Heizungslabel' })),
+      ...(item.bedienungsanleitungFotos || []).map((url: string) => ({ url, label: 'Foto zur Bedienungsanleitung' })),
     ];
   };
 
@@ -511,8 +535,11 @@ export default function Page() {
     }
   };
 
-  if (isLoading || !mounted) {
-    return <LoadingSpinner />
+  if (isAuthenticated === null) {
+    return <LoadingSpinner />; // Or any other loading indicator
+  }
+  if (!isAuthenticated) {
+     return <LoadingSpinner />; // Or a message like "Redirecting to login..."
   }
 
   const currentLogo = theme === 'dark' ? '/images/heizungsplakette-logo-hell.png' : '/images/heizungsplakette-logo.png';

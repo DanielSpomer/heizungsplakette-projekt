@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { motion } from "framer-motion"
 import { useState, useEffect } from 'react'
 import SplitText from '@/components/SplitText'
+import { useRouter } from 'next/navigation'
 
 function SquaresBackground() {
   return (
@@ -29,6 +30,7 @@ function SquaresBackground() {
 
 export default function HeizungsplaketteHomepage() {
   const [isScrolled, setIsScrolled] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const updateScrolled = () => {
@@ -44,20 +46,16 @@ export default function HeizungsplaketteHomepage() {
       <header className={`fixed w-full z-50 transition-all duration-500 ${
         isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'
       }`}>
-        <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/">
             <Image 
               src="/images/heizungsplakette-logo.png" 
               alt="Heizungsplakette Logo" 
-              width={140} 
-              height={35} 
-              className="w-auto h-8"
+              width={250}
+              height={50}
               priority
             />
           </Link>
-          <Button asChild className="bg-blue-600 text-white rounded-full px-6 py-2 text-sm font-medium hover:bg-blue-700 transition-all hover:scale-105">
-            <Link href="/heizungsplakette">Jetzt bestellen</Link>
-          </Button>
         </div>
       </header>
 
@@ -104,11 +102,14 @@ export default function HeizungsplaketteHomepage() {
             transition={{ delay: 0.6, duration: 0.8 }}
             className="mt-8"
           >
-            <Button asChild className="bg-blue-600 text-white rounded-full px-8 py-6 text-lg font-medium hover:bg-blue-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl">
-              <Link href="/heizungsplakette">
-                Jetzt bestellen
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
+            <Button 
+              className="bg-blue-600 text-white rounded-full px-8 py-6 text-lg font-medium hover:bg-blue-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl"
+              onClick={() => {
+                router.push('/heizungsplakette');
+              }}
+            >
+              Jetzt bestellen
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </motion.div>
         </motion.div>
@@ -224,7 +225,6 @@ export default function HeizungsplaketteHomepage() {
 
       {/* CTA Section */}
       <section className="py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-10" />
         <div className="max-w-4xl mx-auto px-4 text-center relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

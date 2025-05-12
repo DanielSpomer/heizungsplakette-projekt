@@ -1,79 +1,110 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const router = useRouter()
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
-    console.log('Attempting login with:', username)
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ username, password }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
-      console.log('Login response:', data)
-
-      if (response.ok) {
-        console.log('Login successful, verifying token')
-        const verifyResponse = await fetch('/api/auth/verify')
-        const verifyData = await verifyResponse.json()
-
-        if (verifyData.isAuthenticated) {
-          console.log('Token verified, redirecting to dashboard')
-          router.push('/dashboard')
-        } else {
-          console.log('Token verification failed')
-          setError('Authentication failed. Please try again.')
-        }
+      if (response.ok && data.success) {
+        router.push('/dashboard');
       } else {
-        console.log('Login failed:', data.message)
-        setError(data.message || 'Login failed')
+        setError(data.message || 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.');
       }
-    } catch (error: unknown) {
-      console.error('Login error:', error instanceof Error ? error.message : 'Unknown error')
-      setError('An error occurred. Please try again later.')
+    } catch (err) {
+      setError('Ein Fehler ist aufgetreten. Bitte überprüfen Sie Ihre Netzwerkverbindung.');
+      console.error('Login error:', err);
     }
-  }
+    setIsLoading(false);
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
-      <Card>
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8">
+        <Link href="/" aria-label="Go to homepage">
+          <Image 
+            src="/images/heizungsplakette-logo.png" 
+            alt="Heizungsplakette Logo" 
+            width={250} 
+            height={50} 
+            className="mx-auto"
+          />
+        </Link>
+      </div>
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight">Dashboard Login</CardTitle>
+          <CardDescription>Bitte melden Sie sich an, um fortzufahren.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
-
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-
-              {error && <div className="text-red-500">{error}</div>}
-
-              <Button type="submit">Login</Button>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="username">Benutzername</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="mt-1"
+              />
             </div>
+
+            <div>
+              <Label htmlFor="password">Passwort</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</p>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Anmelden...' : 'Anmelden'}
+            </Button>
           </form>
         </CardContent>
+        <CardFooter className="text-xs text-center text-gray-500">
+          <p>Geben Sie Ihre Administrator-Anmeldedaten ein.</p>
+        </CardFooter>
       </Card>
     </div>
-  )
-}
+  );
+} 

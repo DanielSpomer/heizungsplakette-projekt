@@ -12,14 +12,14 @@ export async function POST(request: Request) {
 
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     console.log('Credentials correct, generating token')
-    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' })
+    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '30m' })
 
     const response = NextResponse.json({ success: true, message: 'Login successful' })
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 3600, // 1 hour
+      maxAge: 900, // 15 minutes in seconds (changed from 3600)
       path: '/',
     })
 

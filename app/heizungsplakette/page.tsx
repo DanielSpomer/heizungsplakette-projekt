@@ -742,7 +742,7 @@ export default function HeizungsplaketteMaske() {
                 </legend>
                 <div className="mb-6 space-y-4 text-gray-700">
                   <p>
-                    Herzlich willkommen bei „heizungsplakette.de“!
+                    Herzlich willkommen bei „heizungsplakette.de"!"
                   </p>
                   <p>
                     Auf Basis Ihrer Angaben erstellen wir eine Heizungsplakette für Ihre Heizung, aus der hervorgeht, wie lange diese noch betrieben werden darf. Bevor wir Ihnen die Heizungsplakette per E-Mail zusenden, überprüfen wir Ihre Eingaben sorgfältig.
@@ -1850,7 +1850,7 @@ export default function HeizungsplaketteMaske() {
           }
         }
         .step-content-animate-in {
-          animation: fadeInSlideUp 0.5s ease-in-out forwards;
+          animation: fadeInSlideUp 0.8s ease-in-out forwards; /* Changed from 0.5s to 0.8s */
         }
       `}</style>
     </div>
