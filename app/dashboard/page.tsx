@@ -87,7 +87,7 @@ const getStatusColor = (status: string): string => {
 }
 
 const LoadingSpinner = () => (
-  <div className="flex justify-center items-center h-screen">
+  <div className="flex justify-center items-center h-screen" suppressHydrationWarning={true}>
     <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
   </div>
 );
@@ -543,15 +543,16 @@ export default function Page() {
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="flex justify-between items-center mb-8">
           <div className="relative w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 z-10" />
             <Input
               type="search"
               placeholder="Suche..."
-              className="pl-10 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm dark:text-gray-200 dark:border-gray-700 rounded-xl"
+              className="pl-11 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm dark:text-gray-200 dark:border-gray-700 rounded-xl"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+
           <div className="flex items-center space-x-3">
             <Switch
               id="show-details"
