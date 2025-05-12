@@ -628,35 +628,21 @@ export default function Page() {
               )}
             </div>
             <div className="w-[420px] max-w-[40vw] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-auto p-6 flex flex-col gap-4 pdf-rotation-scroll">
-              {(function() {
-                const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl) || heizungsplaketten.find(p => String(p.id) === String(pdfPreviewUrl?.split('-')[1]));
-                if (!item) return null;
-                return getAllImagesForPreview().map(({ url, label }, idx) => (
-                  <div key={url} className="border p-2 rounded mb-2">
-                    <div className="font-semibold mb-1">{label} {idx + 1}</div>
-                    <div className="relative w-full h-32 mb-2 bg-gray-100 flex items-center justify-center overflow-hidden">
-                      <img 
-                        src={url} 
-                        alt={label} 
-                        className="max-w-full max-h-full object-contain" 
-                        style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }} 
-                      />
-                    </div>
-                    <div className="flex gap-2 justify-between">
-                      {[0, 90, 180, 270].map(deg => (
-                        <Button
-                          key={deg}
-                          variant={imageRotations[url] === deg ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleSetRotation(url, deg)}
-                        >
-                          {deg}&deg;
-                        </Button>
-                      ))}
-                    </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {getAllImagesForPreview().map((url: string, index: number) => (
+                  <div key={index} className="relative group">
+                    <Image
+                      src={url}
+                      alt={`Vorschau Bild ${index + 1}`}
+                      width={100} 
+                      height={100}
+                      className="w-full h-auto object-cover rounded-md shadow-md cursor-pointer hover:opacity-80 transition-opacity"
+                      style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }}
+                      onClick={() => { /* TODO: Implement larger preview or specific action */ }}
+                    />
                   </div>
-                ));
-              })()}
+                ))}
+              </div>
               <Button
                 onClick={handleRegeneratePdf}
                 disabled={regeneratingPdf}
