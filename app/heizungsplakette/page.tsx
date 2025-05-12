@@ -740,18 +740,21 @@ export default function HeizungsplaketteMaske() {
                     <ClipboardList className="h-8 w-8 mr-3 text-blue-600" aria-hidden="true" /> {/* Increased icon size and mr-2 to mr-3 */}
                   Richtlinien und Bedingungen
                 </legend>
-                  <p className="mb-6 text-gray-700"> {/* Increased mb-4 to mb-6, added text-gray-700 for softer text */}
-                  Herzlich willkommen bei „heizungsplakette.de"!"
-
-                  Auf Basis Ihrer Angaben erstellen wir eine Heizungsplakette für Ihre Heizung, aus der hervorgeht, wie lange diese noch betrieben werden darf. Bevor wir Ihnen die Heizungsplakette per E-Mail zusenden, überprüfen wir Ihre Eingaben sorgfältig.
-
-                  Bitte rechnen Sie damit, dass Sie die Heizungsplakette innerhalb von etwa 48 Stunden per E-Mail erhalten. Diese Zeit benötigen wir, um Ihre Angaben mit den gesetzlichen Vorgaben des Heizungsgesetzes abzugleichen.
-
-                  Wir bitten um Ihr Verständnis.
-
-                  Bei Fragen wenden Sie sich gerne jederzeit per E-Mail an: service@heizungsplakette.de
-                </p>
-                  <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
+                <div className="mb-6 space-y-4 text-gray-700">
+                  <p>
+                    Herzlich willkommen bei „heizungsplakette.de“!
+                  </p>
+                  <p>
+                    Auf Basis Ihrer Angaben erstellen wir eine Heizungsplakette für Ihre Heizung, aus der hervorgeht, wie lange diese noch betrieben werden darf. Bevor wir Ihnen die Heizungsplakette per E-Mail zusenden, überprüfen wir Ihre Eingaben sorgfältig.
+                  </p>
+                  <p>
+                    Bitte rechnen Sie damit, dass Sie die Heizungsplakette innerhalb von etwa 48 Stunden per E-Mail erhalten. Diese Zeit benötigen wir, um Ihre Angaben mit den gesetzlichen Vorgaben des Heizungsgesetzes abzugleichen.
+                  </p>
+                  <p>
+                    Bei Fragen wenden Sie sich gerne jederzeit per E-Mail an: service@heizungsplakette.de
+                  </p>
+                </div>
+                <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
                     <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
                     <Checkbox
                       id="datenschutzUndNutzungsbedingungen"
