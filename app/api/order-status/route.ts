@@ -4,22 +4,20 @@ import type { NextRequest } from 'next/server';
 
 const prisma = new PrismaClient();
 
-export async function GET(
-  request: NextRequest, 
-  { params }: { params: { orderId: string } }
-) {
-  const orderId = params.orderId;
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const orderId = searchParams.get('orderId');
 
   if (!orderId) {
-    return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    return NextResponse.json({ error: 'Order ID is required as a query parameter' }, { status: 400 });
   }
 
   try {
     const order = await prisma.heizungsplakette.findUnique({
       where: { id: orderId },
-      select: { // Only select the fields needed
+      select: { 
         paymentStatus: true,
-        id: true // Good to return the ID for confirmation
+        id: true 
       },
     });
 
