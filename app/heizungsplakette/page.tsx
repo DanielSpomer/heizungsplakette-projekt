@@ -168,7 +168,7 @@ export default function HeizungsplaketteMaske() {
           console.error(`Error during payment status polling for ${orderId}:`, error);
           // Optionally stop polling on repeated errors
         }
-      }, 5000); // Poll every 5 seconds
+      }, 2500); // Poll every 5 seconds
     } else {
       // Debug log for when polling conditions are not met
       console.log(`Polling useEffect: Conditions NOT met. currentStep: ${currentStep}, orderId: ${orderId}, isPollingPaymentStatus: ${isPollingPaymentStatus}`);
@@ -407,6 +407,17 @@ export default function HeizungsplaketteMaske() {
       if (!formData.energieausweis) newErrors.energieausweis = "Bitte geben Sie an, ob ein Energieausweis vorliegt."
       if (formData.energieausweis === "Ja" && !formData.energieausweisDate) {
         newErrors.energieausweisDate = "Bitte geben Sie das Datum des Energieausweises an."
+      } else if (formData.energieausweis === "Ja" && formData.energieausweisDate && formData.baujahr) {
+        const energieausweisDateObj = new Date(formData.energieausweisDate);
+        const baujahrDateObj = new Date(Number.parseInt(formData.baujahr, 10), 0, 1); // Convert baujahr to number
+
+        // Set hours to 0 to compare dates only, avoiding timezone issues affecting day comparison
+        energieausweisDateObj.setHours(0, 0, 0, 0);
+        baujahrDateObj.setHours(0, 0, 0, 0);
+
+        if (energieausweisDateObj < baujahrDateObj) {
+          newErrors.energieausweisDate = "Das Datum des Energieausweises darf nicht vor dem Baujahr der Heizung liegen.";
+        }
       }
       if (!formData.vorname) newErrors.vorname = "Bitte geben Sie Ihren Vornamen an."
       if (!formData.nachname) newErrors.nachname = "Bitte geben Sie Ihren Nachnamen an."
@@ -496,12 +507,14 @@ export default function HeizungsplaketteMaske() {
     // If currentStep is 6 (Summary and Confirmation step)
     if (currentStep === 6) {
       // Prevent multiple submissions
-      if (isSubmitting) {
-        return
+      if (isSubmitting) { // Ensure this check is effective
+        console.log("Submit blocked: isSubmitting is true");
+        return;
       }
 
-      setIsSubmitting(true)
-      setSubmitError(null)
+      setIsSubmitting(true); // Set submitting state immediately
+      setSubmitError(null);
+      console.log("handleSubmit for step 6 triggered, isSubmitting set to true");
 
       try {
         // Upload images to Vercel Blob Storage
@@ -558,12 +571,14 @@ export default function HeizungsplaketteMaske() {
         // setCurrentStep(5) // This was old logic, remove
         setCurrentStep(7); // Proceed to the new Payment Step (Step 7)
         setVisitedSteps((prev) => Array.from(new Set([...prev, 7]))); // Mark step 7 as visited
-
+        // setIsSubmitting(false); // This should be in the finally block
       } catch (error) {
-        console.error("Error submitting form:", error)
-        setSubmitError(error instanceof Error ? error.message : "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")
+        console.error("Error submitting form:", error);
+        setSubmitError(error instanceof Error ? error.message : "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+        // setIsSubmitting(false); // This should be in the finally block
       } finally {
-        setIsSubmitting(false)
+        console.log("handleSubmit for step 6 finally block, setting isSubmitting to false");
+        setIsSubmitting(false); // Ensure isSubmitting is reset
       }
     }
   }
@@ -1601,7 +1616,11 @@ export default function HeizungsplaketteMaske() {
                     </p>
                     {formData.energieausweis === "Ja" && (
                       <p>
-                        <strong>Datum des Energieausweises:</strong> {formData.energieausweisDate}
+                        <strong>Datum des Energieausweises:</strong> {
+                          formData.energieausweisDate 
+                            ? new Date(formData.energieausweisDate).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                            : ''
+                        }
                       </p>
                     )}
                   </div>
