@@ -11,8 +11,17 @@ const prismaClient = new PrismaClient();
 // Shared secret for IPN signature verification (MUST be set in environment variables)
 // const COPECART_IPN_SHARED_SECRET = process.env.COPECART_IPN_SHARED_SECRET; // This line seems to be shadowed by the one in the POST handler. Ensure correct one is used.
 
+// Define a more specific type for orderData used in email
+interface OrderDataForEmail {
+  id: string;
+  email: string;
+  vorname: string;
+  nachname: string;
+  // Add other fields if sendConfirmationEmail uses them directly from orderData
+}
+
 // Helper function to send email (adapted from /api/send-email/route.ts)
-async function sendConfirmationEmail(orderData: any) {
+async function sendConfirmationEmail(orderData: OrderDataForEmail) {
   const transporter = nodemailer.createTransport({
     host: "smtps.udag.de",
     port: 465,

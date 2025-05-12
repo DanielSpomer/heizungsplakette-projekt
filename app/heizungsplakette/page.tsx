@@ -1663,7 +1663,7 @@ export default function HeizungsplaketteMaske() {
 
                   {!isPollingPaymentStatus && orderId && (
                     <p className="text-sm text-gray-500 text-center mt-2">
-                      Falls das Zahlungsfenster nicht erschienen ist, oder Sie es geschlossen haben, klicken Sie bitte erneut auf "Zur Bezahlung".
+                      Falls das Zahlungsfenster nicht erschienen ist, oder Sie es geschlossen haben, klicken Sie bitte erneut auf &quot;Zur Bezahlung&quot;.
                     </p>
                   )}
                   <p className="text-sm text-gray-500 text-center">Sichere Bezahlung über Copecart</p>
