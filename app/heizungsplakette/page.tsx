@@ -305,7 +305,7 @@ export default function HeizungsplaketteMaske() {
 
         // Reset the input value so the same file can be selected for another field
         e.target.value = ""; 
-        
+
         setErrors((prev) => {
           const newErrors = { ...prev }
           if (inputFiles.length > maxFiles && e.target.files && e.target.files.length > maxFiles) { // Check original selection length for error
@@ -324,7 +324,7 @@ export default function HeizungsplaketteMaske() {
         setIsCompressing(true); // Indicate compression has started
 
         const compressionOptions = {
-          maxSizeMB: 1, // Max file size in MB
+          maxSizeMB: 0.4, // Max file size in MB (changed from 1 to 0.4)
           maxWidthOrHeight: 1920, // Max width or height
           useWebWorker: true, // Use web worker for better performance
           initialQuality: 0.7 // Initial quality, will be adjusted by the library
@@ -357,7 +357,7 @@ export default function HeizungsplaketteMaske() {
       }
     }
 
-  const validateStep = (step: number) => {
+  const validateStep = async (step: number) => { // Make validateStep async
     const newErrors: Record<string, string> = {}
 
     if (step === 1) {
@@ -382,6 +382,18 @@ export default function HeizungsplaketteMaske() {
       if (!formData.hausnummer) newErrors.hausnummer = "Bitte geben Sie die Hausnummer an."
       if (!formData.postleitzahl) newErrors.postleitzahl = "Bitte geben Sie die Postleitzahl an."
       if (!formData.ort) newErrors.ort = "Bitte geben Sie den Ort an."
+
+      // Integrate address validation
+      if (formData.strasse && formData.hausnummer && formData.postleitzahl && formData.ort) {
+        const isAddressApiValid = await validateAddress();
+        if (!isAddressApiValid) {
+          newErrors.addressApi = addressValidationMessage || "Die Adresse konnte nicht validiert werden."; 
+          // Use the message set by validateAddress or a default
+        }
+      } else {
+        // Ensure addressValidationMessage is cleared or set appropriately if fields are empty
+        setAddressValidationMessage("Bitte füllen Sie alle Adressfelder aus, um die Adresse zu validieren.");
+      }
     } else if (step === 4) {
       // Baujahr validation based on alterDerHeizung
       const currentYear = new Date().getFullYear();
@@ -533,7 +545,7 @@ export default function HeizungsplaketteMaske() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // Validate the current step before proceeding or submitting
-    if (!validateStep(currentStep)) return
+    if (!(await validateStep(currentStep))) return; // Await validateStep
 
     // If current step is before the summary step (new step 6), just advance
     if (currentStep < 6) {
@@ -554,65 +566,65 @@ export default function HeizungsplaketteMaske() {
 
     // If currentStep is 6 (Summary and Confirmation step)
     if (currentStep === 6) {
-      // Prevent multiple submissions
+    // Prevent multiple submissions
       if (isSubmitting) { // Ensure this check is effective
         console.log("Submit blocked: isSubmitting is true");
         return;
-      }
+    }
 
       setIsSubmitting(true); // Set submitting state immediately
       setSubmitError(null);
       console.log("handleSubmit for step 6 triggered, isSubmitting set to true");
 
-      try {
-        // Upload images to Vercel Blob Storage
-        const uploadField = async (files: File[]) => {
-          const urls: string[] = [];
-          for (const file of files) {
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', file);
-            const response = await fetch('/api/upload-image', {
-              method: 'POST',
-              body: uploadFormData,
-            });
-            if (!response.ok) {
-              throw new Error(`Failed to upload ${file.name}`);
-            }
-            const data = await response.json();
-            urls.push(data.url);
+    try {
+      // Upload images to Vercel Blob Storage
+      const uploadField = async (files: File[]) => {
+        const urls: string[] = [];
+        for (const file of files) {
+          const uploadFormData = new FormData();
+          uploadFormData.append('file', file);
+          const response = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: uploadFormData,
+          });
+          if (!response.ok) {
+            throw new Error(`Failed to upload ${file.name}`);
           }
-          return urls;
-        };
-
-        const heizungsanlageUrls = await uploadField(formData.heizungsanlageFotos);
-        const heizungsetiketteUrls = await uploadField(formData.heizungsetiketteFotos);
-        const heizungslabelUrls = await uploadField(formData.heizungslabelFotos);
-        const bedienungsanleitungUrls = await uploadField(formData.bedienungsanleitungFotos);
-
-        // Prepare form data with uploaded URLs
-        const formDataToSubmit = {
-          ...formData,
-          heizungsanlageFotos: heizungsanlageUrls,
-          heizungsetiketteFotos: heizungsetiketteUrls,
-          heizungslabelFotos: heizungslabelUrls,
-          bedienungsanleitungFotos: bedienungsanleitungUrls,
-          herkunft: herkunft, // Make sure 'herkunft' is included
-        };
-
-        // Submit form data
-        const response = await fetch("/api/heizungsplakette", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formDataToSubmit),
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to submit form data to heizungsplakette API")
+          const data = await response.json();
+          urls.push(data.url);
         }
+        return urls;
+      };
 
-        const data = await response.json()
+      const heizungsanlageUrls = await uploadField(formData.heizungsanlageFotos);
+      const heizungsetiketteUrls = await uploadField(formData.heizungsetiketteFotos);
+      const heizungslabelUrls = await uploadField(formData.heizungslabelFotos);
+      const bedienungsanleitungUrls = await uploadField(formData.bedienungsanleitungFotos);
+
+      // Prepare form data with uploaded URLs
+      const formDataToSubmit = {
+        ...formData,
+        heizungsanlageFotos: heizungsanlageUrls,
+        heizungsetiketteFotos: heizungsetiketteUrls,
+        heizungslabelFotos: heizungslabelUrls,
+        bedienungsanleitungFotos: bedienungsanleitungUrls,
+          herkunft: herkunft, // Make sure 'herkunft' is included
+      };
+
+      // Submit form data
+      const response = await fetch("/api/heizungsplakette", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formDataToSubmit),
+      })
+
+      if (!response.ok) {
+          throw new Error("Failed to submit form data to heizungsplakette API")
+      }
+
+      const data = await response.json()
         setOrderId(data.id) // Save order ID
         
         // DO NOT SEND EMAIL HERE
@@ -620,11 +632,11 @@ export default function HeizungsplaketteMaske() {
         setCurrentStep(7); // Proceed to the new Payment Step (Step 7)
         setVisitedSteps((prev) => Array.from(new Set([...prev, 7]))); // Mark step 7 as visited
         // setIsSubmitting(false); // This should be in the finally block
-      } catch (error) {
+    } catch (error) {
         console.error("Error submitting form:", error);
         setSubmitError(error instanceof Error ? error.message : "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
         // setIsSubmitting(false); // This should be in the finally block
-      } finally {
+    } finally {
         console.log("handleSubmit for step 6 finally block, setting isSubmitting to false");
         setIsSubmitting(false); // Ensure isSubmitting is reset
       }
@@ -705,7 +717,7 @@ export default function HeizungsplaketteMaske() {
                       aria-label={`Schritt ${stepValue}`}
                     >
                       {isCompleted && <Check className="w-4 h-4 text-blue-600" />}
-                    </button>
+                  </button>
 
                     {index < arr.length - 1 && (
                       <div className={`
@@ -723,336 +735,337 @@ export default function HeizungsplaketteMaske() {
           <form onSubmit={handleSubmit} className="space-y-8 mt-8"> {/* mt-8 provides space below new progress indicator */}
             {currentStep === 1 && (
               <div className="step-content-animate-in">
-                <fieldset>
+              <fieldset>
                   <legend className="text-3xl font-semibold mb-8 flex items-center"> {/* Increased text-xl to text-3xl, mb-4 to mb-8 */}
                     <ClipboardList className="h-8 w-8 mr-3 text-blue-600" aria-hidden="true" /> {/* Increased icon size and mr-2 to mr-3 */}
-                    Richtlinien und Bedingungen
-                  </legend>
+                  Richtlinien und Bedingungen
+                </legend>
                   <p className="mb-6 text-gray-700"> {/* Increased mb-4 to mb-6, added text-gray-700 for softer text */}
-                    Herzlich Willkommen bei &quot;heizungsplakette.de&quot;. Wir stellen aufgrund Ihrer Angaben die
-                    Heizungsplakette für ihre Heizung aus, aus der sich ergibt, wie lange Ihre Heizung weiter betrieben
-                    werden darf. Wir werden die Angaben, die Sie hier eingeben überprüfen, bevor wir die Heizungsplakette
-                    an Sie versenden. Gehen Sie bitte deshalb davon aus, dass die Heizungsplakette etwa innerhalb von 48
-                    Stunden bei Ihnen per E-Mail ankommen wird. Wir benötigen diese Zeit, um die Angaben vor der
-                    Anfertigung der Heizungsplakette mit den gesetzlichen Vorgaben aus dem Heizungsgesetz abzugleichen.
-                    Wir bitten um Verständnis. Wenn Sie Fragen haben, wenden Sie sich jederzeit per E-Mail an
-                    service@heizungsplakette.de.
-                  </p>
+                  Herzlich willkommen bei „heizungsplakette.de"!"
+
+                  Auf Basis Ihrer Angaben erstellen wir eine Heizungsplakette für Ihre Heizung, aus der hervorgeht, wie lange diese noch betrieben werden darf. Bevor wir Ihnen die Heizungsplakette per E-Mail zusenden, überprüfen wir Ihre Eingaben sorgfältig.
+
+                  Bitte rechnen Sie damit, dass Sie die Heizungsplakette innerhalb von etwa 48 Stunden per E-Mail erhalten. Diese Zeit benötigen wir, um Ihre Angaben mit den gesetzlichen Vorgaben des Heizungsgesetzes abzugleichen.
+
+                  Wir bitten um Ihr Verständnis.
+
+                  Bei Fragen wenden Sie sich gerne jederzeit per E-Mail an: service@heizungsplakette.de
+                </p>
                   <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
                     <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
-                      <Checkbox
-                        id="datenschutzUndNutzungsbedingungen"
-                        checked={formData.datenschutzUndNutzungsbedingungen}
-                        onCheckedChange={handleCheckboxChange("datenschutzUndNutzungsbedingungen")}
-                      />
-                      <Label htmlFor="datenschutzUndNutzungsbedingungen" className="text-sm">
-                        Ich stimme den{" "}
-                        <a
-                          href="/Datenschutzhinweis.pdf"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Datenschutzhinweisen
-                        </a>
-                        , der{" "}
-                        <a
-                          href="/Widerrufsbelehrung.pdf"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Widerrufsbelehrung
-                        </a>{" "}
-                        und den{" "}
-                        <a
-                          href="/Nutzungsbedingungen.pdf"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Nutzungsbedingungen
-                        </a>{" "}
-                        zu
-                      </Label>
-                    </div>
-                    {errors.datenschutzUndNutzungsbedingungen && (
-                      <p className="text-red-500" role="alert">
-                        {errors.datenschutzUndNutzungsbedingungen}
-                      </p>
-                    )}
-
-                    <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
-                      <Checkbox
-                        id="einwilligungDatenverarbeitung"
-                        checked={formData.einwilligungDatenverarbeitung}
-                        onCheckedChange={handleCheckboxChange("einwilligungDatenverarbeitung")}
-                      />
-                      <Label htmlFor="einwilligungDatenverarbeitung" className="text-sm text-gray-700"> {/* Softer text */}
-                        Ich erkläre mich mit der Verarbeitung meiner personenbezogenen Daten zum Zweck der Übermittlung
-                        weiterer Informationen rund um die Heizungsplakette, das GEG sowie weiterer fachlicher und/oder
-                        technischer Informationen und der Kontaktaufnahme per Telefon und/oder E-Mail einverstanden und
-                        kann diese Einwilligungserklärung gegenüber dem Anbieter jederzeit widerrufen
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
-                      <Checkbox
-                        id="aufforderungSofortigeTaetigkeit"
-                        checked={formData.aufforderungSofortigeTaetigkeit}
-                        onCheckedChange={handleCheckboxChange("aufforderungSofortigeTaetigkeit")}
-                      />
-                      <Label htmlFor="aufforderungSofortigeTaetigkeit" className="text-sm text-gray-700"> {/* Softer text */}
-                        Ich verlange ausdrücklich, dass Sie mit Ihrer Leistung vor Ablauf der Widerrufsfrist beginnen. Mir
-                        ist bekannt, dass mein Widerrufsrecht bei vollständiger Vertragserfüllung durch Sie erlischt (§
-                        356 Abs. 4 BGB). Mir ist ebenfalls bekannt, dass ich Wertersatz für die bis zum Widerruf
-                        erbrachten Leistungen gem. § 357 a Abs. 2 BGB schulde, wenn ich den Vertrag fristgemäß widerrufe.
-                      </Label>
-                    </div>
-                    {errors.aufforderungSofortigeTaetigkeit && (
-                      <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                        {errors.aufforderungSofortigeTaetigkeit}
-                      </p>
-                    )}
+                    <Checkbox
+                      id="datenschutzUndNutzungsbedingungen"
+                      checked={formData.datenschutzUndNutzungsbedingungen}
+                      onCheckedChange={handleCheckboxChange("datenschutzUndNutzungsbedingungen")}
+                    />
+                    <Label htmlFor="datenschutzUndNutzungsbedingungen" className="text-sm">
+                      Ich stimme den{" "}
+                      <a
+                        href="/Datenschutzhinweis.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Datenschutzhinweisen
+                      </a>
+                      , der{" "}
+                      <a
+                        href="/Widerrufsbelehrung.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Widerrufsbelehrung
+                      </a>{" "}
+                      und den{" "}
+                      <a
+                        href="/Nutzungsbedingungen.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Nutzungsbedingungen
+                      </a>{" "}
+                      zu
+                    </Label>
                   </div>
-                </fieldset>
+                  {errors.datenschutzUndNutzungsbedingungen && (
+                    <p className="text-red-500" role="alert">
+                      {errors.datenschutzUndNutzungsbedingungen}
+                    </p>
+                  )}
+
+                    <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
+                    <Checkbox
+                      id="einwilligungDatenverarbeitung"
+                      checked={formData.einwilligungDatenverarbeitung}
+                      onCheckedChange={handleCheckboxChange("einwilligungDatenverarbeitung")}
+                    />
+                      <Label htmlFor="einwilligungDatenverarbeitung" className="text-sm text-gray-700"> {/* Softer text */}
+                      Ich erkläre mich mit der Verarbeitung meiner personenbezogenen Daten zum Zweck der Übermittlung
+                      weiterer Informationen rund um die Heizungsplakette, das GEG sowie weiterer fachlicher und/oder
+                      technischer Informationen und der Kontaktaufnahme per Telefon und/oder E-Mail einverstanden und
+                      kann diese Einwilligungserklärung gegenüber dem Anbieter jederzeit widerrufen
+                    </Label>
+                  </div>
+
+                    <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
+                    <Checkbox
+                      id="aufforderungSofortigeTaetigkeit"
+                      checked={formData.aufforderungSofortigeTaetigkeit}
+                      onCheckedChange={handleCheckboxChange("aufforderungSofortigeTaetigkeit")}
+                    />
+                      <Label htmlFor="aufforderungSofortigeTaetigkeit" className="text-sm text-gray-700"> {/* Softer text */}
+                      Ich verlange ausdrücklich, dass Sie mit Ihrer Leistung vor Ablauf der Widerrufsfrist beginnen. Mir
+                      ist bekannt, dass mein Widerrufsrecht bei vollständiger Vertragserfüllung durch Sie erlischt (§
+                      356 Abs. 4 BGB). Mir ist ebenfalls bekannt, dass ich Wertersatz für die bis zum Widerruf
+                      erbrachten Leistungen gem. § 357 a Abs. 2 BGB schulde, wenn ich den Vertrag fristgemäß widerrufe.
+                    </Label>
+                  </div>
+                  {errors.aufforderungSofortigeTaetigkeit && (
+                      <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                      {errors.aufforderungSofortigeTaetigkeit}
+                    </p>
+                  )}
+                </div>
+              </fieldset>
               </div>
             )}
 
             {currentStep === 2 && (
               <div className="step-content-animate-in">
-                <fieldset>
+              <fieldset>
                   <legend className="text-3xl font-semibold mb-8 flex items-center"> {/* Increased text-xl to text-3xl, mb-4 to mb-8 */}
                     <Home className="h-8 w-8 mr-3 text-blue-600" aria-hidden="true" /> {/* Increased icon size and mr-2 to mr-3 */}
-                    Grundlegende Informationen
-                  </legend>
+                  Grundlegende Informationen
+                </legend>
                   <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
-                    <div>
+                  <div>
                       <Label htmlFor="artDerImmobilie" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Art der Immobilie *
-                      </Label>
-                      <Select
-                        name="artDerImmobilie"
-                        onValueChange={handleSelectChange("artDerImmobilie")}
-                        value={formData.artDerImmobilie}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Wählen Sie die Art der Immobilie" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Einfamilienhaus">Einfamilienhaus</SelectItem>
-                          <SelectItem value="Mehrfamilienhaus">Mehrfamilienhaus</SelectItem>
-                          <SelectItem value="Doppelhaushälfte">Doppelhaushälfte</SelectItem>
-                          <SelectItem value="Reihenhaus">Reihenhaus</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.artDerImmobilie && (
+                      Art der Immobilie *
+                    </Label>
+                    <Select
+                      name="artDerImmobilie"
+                      onValueChange={handleSelectChange("artDerImmobilie")}
+                      value={formData.artDerImmobilie}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Wählen Sie die Art der Immobilie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Einfamilienhaus">Einfamilienhaus</SelectItem>
+                        <SelectItem value="Mehrfamilienhaus">Mehrfamilienhaus</SelectItem>
+                        <SelectItem value="Doppelhaushälfte">Doppelhaushälfte</SelectItem>
+                        <SelectItem value="Reihenhaus">Reihenhaus</SelectItem>
+                        <SelectItem value="Sonstige">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.artDerImmobilie && (
                         <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.artDerImmobilie}
-                        </p>
-                      )}
-                    </div>
-                    {formData.artDerImmobilie === "Sonstige" && (
-                      <div>
+                        {errors.artDerImmobilie}
+                      </p>
+                    )}
+                  </div>
+                  {formData.artDerImmobilie === "Sonstige" && (
+                    <div>
                         <Label htmlFor="artDerImmobilieSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                          Sonstige Art der Immobilie *
-                        </Label>
-                        <Input
-                          id="artDerImmobilieSonstige"
-                          name="artDerImmobilieSonstige"
-                          value={formData.artDerImmobilieSonstige}
-                          onChange={handleInputChange}
-                          placeholder="Bitte spezifizieren Sie die Art der Immobilie"
-                        />
-                        {errors.artDerImmobilieSonstige && (
-                          <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                            {errors.artDerImmobilieSonstige}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <Label htmlFor="heizungsart" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Heizungsart *
-                      </Label>
-                      <Select
-                        name="heizungsart"
-                        onValueChange={handleSelectChange("heizungsart")}
-                        value={formData.heizungsart}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Wählen Sie die Heizungsart" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Gasheizung">Gasheizung</SelectItem>
-                          <SelectItem value="Ölheizung">Ölheizung</SelectItem>
-                          <SelectItem value="Wärmepumpe">Wärmepumpe</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.heizungsart && (
-                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.heizungsart}
-                        </p>
-                      )}
-                    </div>
-                    {formData.heizungsart === "Sonstige" && (
-                      <div>
-                        <Label htmlFor="heizungsartSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                          Sonstige Heizungsart *
-                        </Label>
-                        <Input
-                          id="heizungsartSonstige"
-                          name="heizungsartSonstige"
-                          value={formData.heizungsartSonstige}
-                          onChange={handleInputChange}
-                          placeholder="Bitte spezifizieren Sie die Heizungsart"
-                        />
-                        {errors.heizungsartSonstige && (
-                          <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                            {errors.heizungsartSonstige}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <Label htmlFor="alterDerHeizung" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Alter der Heizung *
-                      </Label>
-                      <Select
-                        name="alterDerHeizung"
-                        onValueChange={handleSelectChange("alterDerHeizung")}
-                        value={formData.alterDerHeizung}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Wählen Sie das Alter der Heizung" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="weniger als 10 Jahre">weniger als 10 Jahre</SelectItem>
-                          <SelectItem value="weniger als 20 Jahre">weniger als 20 Jahre</SelectItem>
-                          <SelectItem value="weniger als 30 Jahre">weniger als 30 Jahre</SelectItem>
-                          <SelectItem value="30 Jahre oder älter">30 Jahre oder älter</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.alterDerHeizung && (
-                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.alterDerHeizung}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="email" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        E-Mail *
+                        Sonstige Art der Immobilie *
                       </Label>
                       <Input
-                        id="email"
-                        name="email"
-                        value={formData.email}
+                        id="artDerImmobilieSonstige"
+                        name="artDerImmobilieSonstige"
+                        value={formData.artDerImmobilieSonstige}
                         onChange={handleInputChange}
-                        placeholder="Ihre E-Mail-Adresse"
-                        type="email"
-                        aria-required="true"
+                        placeholder="Bitte spezifizieren Sie die Art der Immobilie"
                       />
-                      {errors.email && (
-                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.email}
+                      {errors.artDerImmobilieSonstige && (
+                          <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                          {errors.artDerImmobilieSonstige}
                         </p>
                       )}
                     </div>
+                  )}
+                  <div>
+                      <Label htmlFor="heizungsart" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Heizungsart *
+                    </Label>
+                    <Select
+                      name="heizungsart"
+                      onValueChange={handleSelectChange("heizungsart")}
+                      value={formData.heizungsart}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Wählen Sie die Heizungsart" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Gasheizung">Gasheizung</SelectItem>
+                        <SelectItem value="Ölheizung">Ölheizung</SelectItem>
+                        <SelectItem value="Wärmepumpe">Wärmepumpe</SelectItem>
+                        <SelectItem value="Sonstige">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.heizungsart && (
+                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                        {errors.heizungsart}
+                      </p>
+                    )}
                   </div>
-                </fieldset>
+                  {formData.heizungsart === "Sonstige" && (
+                    <div>
+                        <Label htmlFor="heizungsartSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                        Sonstige Heizungsart *
+                      </Label>
+                      <Input
+                        id="heizungsartSonstige"
+                        name="heizungsartSonstige"
+                        value={formData.heizungsartSonstige}
+                        onChange={handleInputChange}
+                        placeholder="Bitte spezifizieren Sie die Heizungsart"
+                      />
+                      {errors.heizungsartSonstige && (
+                          <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                          {errors.heizungsartSonstige}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <div>
+                      <Label htmlFor="alterDerHeizung" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Alter der Heizung *
+                    </Label>
+                    <Select
+                      name="alterDerHeizung"
+                      onValueChange={handleSelectChange("alterDerHeizung")}
+                      value={formData.alterDerHeizung}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Wählen Sie das Alter der Heizung" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weniger als 10 Jahre">weniger als 10 Jahre</SelectItem>
+                        <SelectItem value="weniger als 20 Jahre">weniger als 20 Jahre</SelectItem>
+                        <SelectItem value="weniger als 30 Jahre">weniger als 30 Jahre</SelectItem>
+                        <SelectItem value="30 Jahre oder älter">30 Jahre oder älter</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.alterDerHeizung && (
+                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                        {errors.alterDerHeizung}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                      <Label htmlFor="email" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      E-Mail *
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Ihre E-Mail-Adresse"
+                      type="email"
+                      aria-required="true"
+                    />
+                    {errors.email && (
+                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </fieldset>
               </div>
             )}
 
             {currentStep === 3 && (
               <div className="step-content-animate-in">
-                <fieldset>
+              <fieldset>
                   <legend className="text-3xl font-semibold mb-8 flex items-center"> {/* Increased text-xl to text-3xl, mb-4 to mb-8 */}
                     <MapPin className="h-8 w-8 mr-3 text-blue-600" aria-hidden="true" /> {/* Increased icon size and mr-2 to mr-3 */}
-                    Adresse der Immobilie
-                  </legend>
+                  Adresse der Immobilie
+                </legend>
                   <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
-                    <div>
+                  <div>
                       <Label htmlFor="strasse" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Straße *
-                      </Label>
-                      <Input
-                        id="strasse"
-                        name="strasse"
-                        value={formData.strasse}
-                        onChange={handleInputChange}
-                        placeholder="Straßenname"
-                        aria-required="true"
-                      />
-                      {errors.strasse && (
+                      Straße *
+                    </Label>
+                    <Input
+                      id="strasse"
+                      name="strasse"
+                      value={formData.strasse}
+                      onChange={handleInputChange}
+                      placeholder="Straßenname"
+                      aria-required="true"
+                    />
+                    {errors.strasse && (
                         <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.strasse}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="hausnummer" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Hausnummer *
-                      </Label>
-                      <Input
-                        id="hausnummer"
-                        name="hausnummer"
-                        value={formData.hausnummer}
-                        onChange={handleInputChange}
-                        placeholder="Hausnummer"
-                        aria-required="true"
-                      />
-                      {errors.hausnummer && (
-                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.hausnummer}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="postleitzahl" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Postleitzahl *
-                      </Label>
-                      <Input
-                        id="postleitzahl"
-                        name="postleitzahl"
-                        value={formData.postleitzahl}
-                        onChange={handleInputChange}
-                        placeholder="PLZ"
-                        aria-required="true"
-                      />
-                      {errors.postleitzahl && (
-                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.postleitzahl}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="ort" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Ort *
-                      </Label>
-                      <Input
-                        id="ort"
-                        name="ort"
-                        value={formData.ort}
-                        onChange={handleInputChange}
-                        placeholder="Ort"
-                        aria-required="true"
-                      />
-                      {errors.ort && (
-                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
-                          {errors.ort}
-                        </p>
-                      )}
-                    </div>
-                    {addressValidationMessage && (
-                      <Alert variant={addressValidationMessage.includes("erfolgreich") ? "default" : "destructive"}>
-                        <AlertTitle>Adressvalidierung</AlertTitle>
-                        <AlertDescription>{addressValidationMessage}</AlertDescription>
-                      </Alert>
+                        {errors.strasse}
+                      </p>
                     )}
                   </div>
-                </fieldset>
+                  <div>
+                      <Label htmlFor="hausnummer" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Hausnummer *
+                    </Label>
+                    <Input
+                      id="hausnummer"
+                      name="hausnummer"
+                      value={formData.hausnummer}
+                      onChange={handleInputChange}
+                      placeholder="Hausnummer"
+                      aria-required="true"
+                    />
+                    {errors.hausnummer && (
+                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                        {errors.hausnummer}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                      <Label htmlFor="postleitzahl" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Postleitzahl *
+                    </Label>
+                    <Input
+                      id="postleitzahl"
+                      name="postleitzahl"
+                      value={formData.postleitzahl}
+                      onChange={handleInputChange}
+                      placeholder="PLZ"
+                      aria-required="true"
+                    />
+                    {errors.postleitzahl && (
+                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                        {errors.postleitzahl}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                      <Label htmlFor="ort" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Ort *
+                    </Label>
+                    <Input
+                      id="ort"
+                      name="ort"
+                      value={formData.ort}
+                      onChange={handleInputChange}
+                      placeholder="Ort"
+                      aria-required="true"
+                    />
+                    {errors.ort && (
+                        <p className="text-red-500 text-sm mt-1" role="alert"> {/* Added text-sm, mt-1 */}
+                        {errors.ort}
+                      </p>
+                    )}
+                  </div>
+                  {addressValidationMessage && (
+                    <Alert variant={addressValidationMessage.includes("erfolgreich") ? "default" : "destructive"}>
+                      <AlertTitle>Adressvalidierung</AlertTitle>
+                      <AlertDescription>{addressValidationMessage}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              </fieldset>
                 {/* Persönliche Daten and Eigentümer sections will be MOVED FROM HERE to Step 4 */}
               </div>
             )}
@@ -1066,276 +1079,276 @@ export default function HeizungsplaketteMaske() {
                     Angaben zur Heizung
                   </legend>
                   <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
-                    <div>
+                  <div>
                       <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
                         <Building className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Heizsystem
-                      </h3>
+                      Heizsystem
+                    </h3>
                       <Label htmlFor="heizsystem" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Heizsystem *
-                      </Label>
-                      <Select
-                        name="heizsystem"
-                        onValueChange={handleSelectChange("heizsystem")}
-                        value={formData.heizsystem}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Wählen Sie das Heizsystem" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Zentralheizung">Zentralheizung</SelectItem>
-                          <SelectItem value="Etagenheizung">Etagenheizung</SelectItem>
-                          <SelectItem value="Einzelraumheizung">Einzelraumheizung</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      Heizsystem *
+                    </Label>
+                    <Select
+                      name="heizsystem"
+                      onValueChange={handleSelectChange("heizsystem")}
+                      value={formData.heizsystem}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Wählen Sie das Heizsystem" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Zentralheizung">Zentralheizung</SelectItem>
+                        <SelectItem value="Etagenheizung">Etagenheizung</SelectItem>
+                        <SelectItem value="Einzelraumheizung">Einzelraumheizung</SelectItem>
+                        <SelectItem value="Sonstige">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
                       {errors.heizsystem && <p className="text-red-500 text-sm mt-1">{errors.heizsystem}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    {formData.heizsystem === "Sonstige" && (
-                      <div>
+                  </div>
+                  {formData.heizsystem === "Sonstige" && (
+                    <div>
                         <Label htmlFor="heizsystemSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                          Sonstiges Heizsystem *
-                        </Label>
-                        <Input
-                          id="heizsystemSonstige"
-                          name="heizsystemSonstige"
-                          value={formData.heizsystemSonstige}
-                          onChange={handleInputChange}
-                          placeholder="Bitte spezifizieren Sie das Heizsystem"
-                        />
-                        {errors.heizsystemSonstige && <p className="text-red-500 text-sm mt-1">{errors.heizsystemSonstige}</p>} {/* Added text-sm, mt-1 */}
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
-                        <Factory className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Heizungshersteller
-                      </h3>
-                      <Label htmlFor="heizungshersteller" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Heizungshersteller *
-                      </Label>
-                      {formData.heizungsart === "Sonstige" ? (
-                        <Input
-                          id="heizungshersteller"
-                          name="heizungshersteller"
-                          value={formData.heizungshersteller}
-                          onChange={handleInputChange}
-                          placeholder="Geben Sie den Herstelleran"
-                        />
-                      ) : (
-                        <Select
-                          name="heizungshersteller"
-                          onValueChange={handleSelectChange("heizungshersteller")}
-                          value={formData.heizungshersteller}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Wählen Sie den Heizungshersteller" />
-                            <SelectContent>
-                              {(formData.heizungsart === "Wärmepumpe"
-                                ? herstellerListeWaermepumpen
-                                : herstellerListeOelGas
-                              ).map((hersteller) => (
-                                <SelectItem key={hersteller} value={hersteller}>
-                                  {hersteller}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </SelectTrigger>
-                        </Select>
-                      )}
-                      {errors.heizungshersteller && <p className="text-red-500 text-sm mt-1">{errors.heizungshersteller}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
-                        <Calendar className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Baujahr der Heizung
-                      </h3>
-                      <Label htmlFor="baujahr" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Baujahr der Heizung *
+                        Sonstiges Heizsystem *
                       </Label>
                       <Input
-                        id="baujahr"
-                        name="baujahr"
-                        value={formData.baujahr}
+                        id="heizsystemSonstige"
+                        name="heizsystemSonstige"
+                        value={formData.heizsystemSonstige}
                         onChange={handleInputChange}
-                        type="number"
-                        min="1900"
-                        max={new Date().getFullYear()}
+                        placeholder="Bitte spezifizieren Sie das Heizsystem"
                       />
+                        {errors.heizsystemSonstige && <p className="text-red-500 text-sm mt-1">{errors.heizsystemSonstige}</p>} {/* Added text-sm, mt-1 */}
+                    </div>
+                  )}
+                  <div>
+                      <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
+                        <Factory className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
+                      Heizungshersteller
+                    </h3>
+                      <Label htmlFor="heizungshersteller" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Heizungshersteller *
+                    </Label>
+                    {formData.heizungsart === "Sonstige" ? (
+                      <Input
+                        id="heizungshersteller"
+                        name="heizungshersteller"
+                        value={formData.heizungshersteller}
+                        onChange={handleInputChange}
+                        placeholder="Geben Sie den Herstelleran"
+                      />
+                    ) : (
+                      <Select
+                        name="heizungshersteller"
+                        onValueChange={handleSelectChange("heizungshersteller")}
+                        value={formData.heizungshersteller}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Wählen Sie den Heizungshersteller" />
+                          <SelectContent>
+                            {(formData.heizungsart === "Wärmepumpe"
+                              ? herstellerListeWaermepumpen
+                              : herstellerListeOelGas
+                            ).map((hersteller) => (
+                              <SelectItem key={hersteller} value={hersteller}>
+                                {hersteller}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </SelectTrigger>
+                      </Select>
+                    )}
+                      {errors.heizungshersteller && <p className="text-red-500 text-sm mt-1">{errors.heizungshersteller}</p>} {/* Added text-sm, mt-1 */}
+                  </div>
+                  <div>
+                      <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
+                        <Calendar className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
+                      Baujahr der Heizung
+                    </h3>
+                      <Label htmlFor="baujahr" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                      Baujahr der Heizung *
+                    </Label>
+                    <Input
+                      id="baujahr"
+                      name="baujahr"
+                      value={formData.baujahr}
+                      onChange={handleInputChange}
+                      type="number"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                    />
                       {errors.baujahr && <p className="text-red-500 text-sm mt-1">{errors.baujahr}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
                         <FileText className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Typenbezeichnung
-                      </h3>
+                      Typenbezeichnung
+                    </h3>
                       <Label htmlFor="typenbezeichnung" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Typenbezeichnung *
-                      </Label>
-                      <div className="flex space-x-2">
-                        <Input
-                          id="typenbezeichnung"
-                          name="typenbezeichnung"
-                          value={formData.typenbezeichnung}
-                          onChange={handleInputChange}
-                          placeholder="Geben Sie die Typenbezeichnung ein"
-                          disabled={formData.typenbezeichnungUnbekannt}
+                      Typenbezeichnung *
+                    </Label>
+                    <div className="flex space-x-2">
+                      <Input
+                        id="typenbezeichnung"
+                        name="typenbezeichnung"
+                        value={formData.typenbezeichnung}
+                        onChange={handleInputChange}
+                        placeholder="Geben Sie die Typenbezeichnung ein"
+                        disabled={formData.typenbezeichnungUnbekannt}
+                      />
+                      <div className="flex items-center">
+                        <Checkbox
+                          id="typenbezeichnungUnbekannt"
+                          checked={formData.typenbezeichnungUnbekannt}
+                          onCheckedChange={handleCheckboxChange("typenbezeichnungUnbekannt")}
                         />
-                        <div className="flex items-center">
-                          <Checkbox
-                            id="typenbezeichnungUnbekannt"
-                            checked={formData.typenbezeichnungUnbekannt}
-                            onCheckedChange={handleCheckboxChange("typenbezeichnungUnbekannt")}
-                          />
-                          <Label htmlFor="typenbezeichnungUnbekannt" className="ml-2">
-                            Unbekannt
-                          </Label>
-                        </div>
+                        <Label htmlFor="typenbezeichnungUnbekannt" className="ml-2">
+                          Unbekannt
+                        </Label>
                       </div>
+                    </div>
                       {errors.typenbezeichnung && <p className="text-red-500 text-sm mt-1">{errors.typenbezeichnung}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
                         <Thermometer className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Heizungstechnik
-                      </h3>
+                      Heizungstechnik
+                    </h3>
                       <Label htmlFor="heizungstechnik" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Heizungstechnik *
-                      </Label>
-                      <Select
-                        name="heizungstechnik"
-                        onValueChange={handleSelectChange("heizungstechnik")}
-                        value={formData.heizungstechnik}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Wählen Sie die Heizungstechnik" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Brennwerttechnik">Brennwerttechnik</SelectItem>
-                          <SelectItem value="Niedertemperaturkessel">Niedertemperaturkessel</SelectItem>
-                          <SelectItem value="Konstanttemperatur">Konstanttemperatur</SelectItem>
-                          <SelectItem value="Unbekannt">Unbekannt</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      Heizungstechnik *
+                    </Label>
+                    <Select
+                      name="heizungstechnik"
+                      onValueChange={handleSelectChange("heizungstechnik")}
+                      value={formData.heizungstechnik}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Wählen Sie die Heizungstechnik" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Brennwerttechnik">Brennwerttechnik</SelectItem>
+                        <SelectItem value="Niedertemperaturkessel">Niedertemperaturkessel</SelectItem>
+                        <SelectItem value="Konstanttemperatur">Konstanttemperatur</SelectItem>
+                        <SelectItem value="Unbekannt">Unbekannt</SelectItem>
+                        <SelectItem value="Sonstige">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
                       {errors.heizungstechnik && <p className="text-red-500 text-sm mt-1">{errors.heizungstechnik}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    {formData.heizungstechnik === "Sonstige" && (
-                      <div>
-                        <Label htmlFor="heizungstechnikSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                          Sonstige Heizungstechnik *
-                        </Label>
-                        <Input
-                          id="heizungstechnikSonstige"
-                          name="heizungstechnikSonstige"
-                          value={formData.heizungstechnikSonstige}
-                          onChange={handleInputChange}
-                          placeholder="Bitte spezifizieren Sie die Heizungstechnik"
-                        />
-                        {errors.heizungstechnikSonstige && (
-                          <p className="text-red-500 text-sm mt-1">{errors.heizungstechnikSonstige}</p> /* Added text-sm, mt-1 */
-                        )}
-                      </div>
-                    )}
+                  </div>
+                  {formData.heizungstechnik === "Sonstige" && (
                     <div>
+                        <Label htmlFor="heizungstechnikSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
+                        Sonstige Heizungstechnik *
+                      </Label>
+                      <Input
+                        id="heizungstechnikSonstige"
+                        name="heizungstechnikSonstige"
+                        value={formData.heizungstechnikSonstige}
+                        onChange={handleInputChange}
+                        placeholder="Bitte spezifizieren Sie die Heizungstechnik"
+                      />
+                      {errors.heizungstechnikSonstige && (
+                          <p className="text-red-500 text-sm mt-1">{errors.heizungstechnikSonstige}</p> /* Added text-sm, mt-1 */
+                      )}
+                    </div>
+                  )}
+                  <div>
                       <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
                         <Thermometer className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Energieträger
-                      </h3>
+                      Energieträger
+                    </h3>
                       <Label htmlFor="energietraeger" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Energieträger *
-                      </Label>
-                      <Select
-                        name="energietraeger"
-                        onValueChange={handleSelectChange("energietraeger")}
-                        value={formData.energietraeger}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Wählen Sie den Energieträger" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Strom">Strom</SelectItem>
-                          <SelectItem value="Gas">Gas</SelectItem>
-                          <SelectItem value="Öl">Öl</SelectItem>
-                          <SelectItem value="Kohle">Kohle</SelectItem>
-                          <SelectItem value="Holz/Pellet">Holz/Pellet</SelectItem>
-                          <SelectItem value="Torf">Torf</SelectItem>
-                          <SelectItem value="Unbekannt">Unbekannt</SelectItem>
-                          <SelectItem value="Sonstige">Sonstige</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      Energieträger *
+                    </Label>
+                    <Select
+                      name="energietraeger"
+                      onValueChange={handleSelectChange("energietraeger")}
+                      value={formData.energietraeger}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Wählen Sie den Energieträger" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Strom">Strom</SelectItem>
+                        <SelectItem value="Gas">Gas</SelectItem>
+                        <SelectItem value="Öl">Öl</SelectItem>
+                        <SelectItem value="Kohle">Kohle</SelectItem>
+                        <SelectItem value="Holz/Pellet">Holz/Pellet</SelectItem>
+                        <SelectItem value="Torf">Torf</SelectItem>
+                        <SelectItem value="Unbekannt">Unbekannt</SelectItem>
+                        <SelectItem value="Sonstige">Sonstige</SelectItem>
+                      </SelectContent>
+                    </Select>
                       {errors.energietraeger && <p className="text-red-500 text-sm mt-1">{errors.energietraeger}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    {formData.energietraeger === "Sonstige" && (
-                      <div>
+                  </div>
+                  {formData.energietraeger === "Sonstige" && (
+                    <div>
                         <Label htmlFor="energietraegerSonstige" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                          Sonstiger Energieträger *
-                        </Label>
-                        <Input
-                          id="energietraegerSonstige"
-                          name="energietraegerSonstige"
-                          value={formData.energietraegerSonstige}
-                          onChange={handleInputChange}
-                          placeholder="Bitte spezifizieren Sie den Energieträger"
-                        />
+                        Sonstiger Energieträger *
+                      </Label>
+                      <Input
+                        id="energietraegerSonstige"
+                        name="energietraegerSonstige"
+                        value={formData.energietraegerSonstige}
+                        onChange={handleInputChange}
+                        placeholder="Bitte spezifizieren Sie den Energieträger"
+                      />
                         {errors.energietraegerSonstige && <p className="text-red-500 text-sm mt-1">{errors.energietraegerSonstige}</p>} {/* Added text-sm, mt-1 */}
-                      </div>
-                    )}
-                    <div>
+                    </div>
+                  )}
+                  <div>
                       <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
                         <FileText className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Heizungslabel
-                      </h3>
+                      Heizungslabel
+                    </h3>
                       <Label htmlFor="energielabel" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Existiert ein Heizungslabel? *
-                      </Label>
-                      <RadioGroup
-                        name="energielabel"
-                        value={formData.energielabel}
-                        onValueChange={handleSelectChange("energielabel")}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Ja" id="energielabelJa" />
+                      Existiert ein Heizungslabel? *
+                    </Label>
+                    <RadioGroup
+                      name="energielabel"
+                      value={formData.energielabel}
+                      onValueChange={handleSelectChange("energielabel")}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Ja" id="energielabelJa" />
                           <Label htmlFor="energielabelJa" className="text-gray-700">Ja</Label> {/* Softer text */}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Nein" id="energielabelNein" />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Nein" id="energielabelNein" />
                           <Label htmlFor="energielabelNein" className="text-gray-700">Nein</Label> {/* Softer text */}
-                        </div>
-                      </RadioGroup>
+                      </div>
+                    </RadioGroup>
                       {errors.energielabel && <p className="text-red-500 text-sm mt-1">{errors.energielabel}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <h3 className="text-xl font-semibold flex items-center mb-3"> {/* Increased text-lg to text-xl, added mb-3 */}
                         <FileText className="h-6 w-6 mr-2 text-blue-600" /> {/* Increased icon size */}
-                        Energieausweis
-                      </h3>
+                      Energieausweis
+                    </h3>
                       <Label htmlFor="energieausweis" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                        Liegt ein Energieausweis vor? *
-                      </Label>
-                      <RadioGroup
-                        name="energieausweis"
-                        value={formData.energieausweis}
-                        onValueChange={handleSelectChange("energieausweis")}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Ja" id="energieausweisJa" />
+                      Liegt ein Energieausweis vor? *
+                    </Label>
+                    <RadioGroup
+                      name="energieausweis"
+                      value={formData.energieausweis}
+                      onValueChange={handleSelectChange("energieausweis")}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Ja" id="energieausweisJa" />
                           <Label htmlFor="energieausweisJa" className="text-gray-700">Ja</Label> {/* Softer text */}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Nein" id="energieausweisNein" />
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Nein" id="energieausweisNein" />
                           <Label htmlFor="energieausweisNein" className="text-gray-700">Nein</Label> {/* Softer text */}
-                        </div>
-                      </RadioGroup>
+                      </div>
+                    </RadioGroup>
                       {errors.energieausweis && <p className="text-red-500 text-sm mt-1">{errors.energieausweis}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    {formData.energieausweis === "Ja" && (
-                      <div>
+                  </div>
+                  {formData.energieausweis === "Ja" && (
+                    <div>
                         <Label htmlFor="energieausweisDate" className="font-semibold block mb-2"> {/* Added block mb-2 */}
-                          Datum des Energieausweises *
-                        </Label>
+                        Datum des Energieausweises *
+                      </Label>
                         <DatePicker
-                          id="energieausweisDate"
+                        id="energieausweisDate"
                           selected={formData.energieausweisDate ? new Date(formData.energieausweisDate) : null}
                           onChange={(date) => handleDateChange(date, "energieausweisDate")}
                           dateFormat="dd/MM/yyyy"
@@ -1348,16 +1361,16 @@ export default function HeizungsplaketteMaske() {
                           popperPlacement="bottom-start"
                         />
                         {errors.energieausweisDate && <p className="text-red-500 text-sm mt-1">{errors.energieausweisDate}</p>}
-                      </div>
-                    )}
+                    </div>
+                  )}
                   </div>
                 </fieldset>
                 {/* Persönliche Daten and Eigentümer sections will be INSERTED HERE */}
                 <div className="mt-8"> {/* Added mt-8 for spacing */}
                   <h3 className="text-2xl font-semibold flex items-center mt-6 mb-6"> {/* Increased text-lg to text-2xl, mb-4 to mb-6 */}
                     <User className="h-7 w-7 mr-3 text-blue-600" /> {/* Increased icon size */}
-                    Persönliche Daten
-                  </h3>
+                      Persönliche Daten
+                    </h3>
                   <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Increased gap-4 to gap-6 */}
                       <div>
@@ -1396,8 +1409,8 @@ export default function HeizungsplaketteMaske() {
                       <Label htmlFor="personPostleitzahl" className="font-semibold block mb-2">Postleitzahl *</Label> {/* Added block mb-2 */}
                       <Input id="personPostleitzahl" name="personPostleitzahl" value={formData.personPostleitzahl} onChange={handleInputChange} placeholder="PLZ" disabled={personalAddressIsSameAsPropertyAddress} />
                       {errors.personPostleitzahl && <p className="text-red-500 text-sm mt-1">{errors.personPostleitzahl}</p>} {/* Added text-sm, mt-1 */}
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <Label htmlFor="personOrt" className="font-semibold block mb-2">Ort *</Label> {/* Added block mb-2 */}
                       <Input id="personOrt" name="personOrt" value={formData.personOrt} onChange={handleInputChange} placeholder="Ort" disabled={personalAddressIsSameAsPropertyAddress} />
                       {errors.personOrt && <p className="text-red-500 text-sm mt-1">{errors.personOrt}</p>} {/* Added text-sm, mt-1 */}
@@ -1407,8 +1420,8 @@ export default function HeizungsplaketteMaske() {
                 <div className="mt-8"> {/* Added mt-8 for spacing */}
                   <h3 className="text-2xl font-semibold flex items-center mt-6 mb-6"> {/* Increased text-lg to text-2xl, mb-4 to mb-6 */}
                     <Key className="h-7 w-7 mr-3 text-blue-600" /> {/* Increased icon size */}
-                    Eigentümer
-                  </h3>
+                      Eigentümer
+                    </h3>
                   <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
                     <Label htmlFor="istEigentuemer" className="font-semibold block mb-2">Sind Sie der Eigentümer der Immobilie? *</Label> {/* Added block mb-2 */}
                     <RadioGroup name="istEigentuemer" value={formData.istEigentuemer} onValueChange={handleSelectChange("istEigentuemer")}>
@@ -1424,7 +1437,7 @@ export default function HeizungsplaketteMaske() {
                     {errors.istEigentuemer && <p className="text-red-500 text-sm mt-1">{errors.istEigentuemer}</p>} {/* Added text-sm, mt-1 */}
                   </div>
                 </div>
-                </>
+              </>
               </div>
             )}
 
@@ -1582,13 +1595,13 @@ export default function HeizungsplaketteMaske() {
                     )}
                   </div>
                 </div>
-                </>
+              </>
               </div>
             )}
 
             {currentStep === 6 && (
               <div className="step-content-animate-in">
-                <>
+              <>
                 <h2 className="text-3xl font-semibold mb-8 flex items-center"> {/* Increased text-xl to text-3xl, mb-4 to mb-8 */}
                   <CheckCircle className="h-8 w-8 mr-3 text-blue-600" /> {/* Increased icon size */}
                   Zusammenfassung und Bestätigung
@@ -1747,7 +1760,7 @@ export default function HeizungsplaketteMaske() {
                   </div>
                   {errors.confirmAccuracy && <p className="text-red-500 text-sm mt-1">{errors.confirmAccuracy}</p>} {/* Added text-sm, mt-1 */}
                 </div>
-                </>
+              </>
               </div>
             )}
 
@@ -1808,8 +1821,8 @@ export default function HeizungsplaketteMaske() {
             {currentStep !== 7 && ( // Hide main navigation on Step 7 (Payment step)
               <div className="flex justify-between mt-10"> {/* Increased mt-6 to mt-10 */}
                 <Button type="button" onClick={handleBack} variant="outline" className="transition-all duration-200 ease-out transform hover:shadow-md hover:-translate-y-px active:shadow-sm active:translate-y-0">
-                  Zurück
-                </Button>
+                Zurück
+              </Button>
                 <Button 
                   type="submit" 
                   className="transition-all duration-200 ease-out transform hover:shadow-lg hover:-translate-y-0.5 active:shadow-md active:translate-y-0"
@@ -1817,7 +1830,7 @@ export default function HeizungsplaketteMaske() {
                 >
                   {isCompressing ? "Bilder werden verarbeitet..." : (currentStep < 6 ? "Weiter" : "Angaben speichern und zur Bezahlung")}
                 </Button>
-              </div>
+            </div>
             )}
           </form>
         </div>
