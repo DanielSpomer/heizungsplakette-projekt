@@ -690,7 +690,7 @@ export default function HeizungsplaketteMaske() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto py-12 sm:px-6 lg:px-8"> {/* Increased py-6 to py-12 */}
+      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8"> {/* Changed py-12 to py-6 */}
         <div className="bg-card shadow-xl rounded-lg p-10"> {/* Increased p-6 to p-10, shadow-md to shadow-xl */}
           <h1 className="sr-only">Heizungsplakette Antragsformular</h1>
 
@@ -709,14 +709,14 @@ export default function HeizungsplaketteMaske() {
                         w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ease-in-out
                         focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-background
                         ${isCurrent ? 'border-blue-500 bg-blue-500 ring-blue-500' : /* Changed bg-white to bg-blue-500 */
-                          isCompleted ? 'border-slate-400 bg-slate-300 ring-slate-400' :
+                          isCompleted ? 'border-blue-500 bg-blue-400 ring-slate-400' :
                           'border-gray-300 bg-white hover:border-gray-400 ring-gray-300'
                         }
                       `}
                       aria-current={isCurrent ? 'step' : undefined}
                       aria-label={`Schritt ${stepValue}`}
                     >
-                      {isCompleted && <Check className="w-4 h-4 text-blue-600" />}
+                      {isCompleted && <Check className="w-4 h-4 text-black" />}
                   </button>
 
                     {index < arr.length - 1 && (
@@ -740,7 +740,7 @@ export default function HeizungsplaketteMaske() {
                     <ClipboardList className="h-8 w-8 mr-3 text-blue-600" aria-hidden="true" /> {/* Increased icon size and mr-2 to mr-3 */}
                   Richtlinien und Bedingungen
                 </legend>
-                <div className="mb-6 space-y-4 text-gray-700">
+                <div className="mb-4  space-y-4">
                   <p>
                     Herzlich willkommen bei &bdquo;heizungsplakette.de&ldquo;!
                   </p>
@@ -755,7 +755,7 @@ export default function HeizungsplaketteMaske() {
                   </p>
                 </div>
                 <div className="space-y-6"> {/* Increased space-y-4 to space-y-6 */}
-                    <div className="flex items-center space-x-3"> {/* Increased space-x-2 to space-x-3 */}
+                    <div className="flex items-center space-x-3 text-sm text-gray-700"> {/* Increased space-x-2 to space-x-3 */}
                     <Checkbox
                       id="datenschutzUndNutzungsbedingungen"
                       checked={formData.datenschutzUndNutzungsbedingungen}
