@@ -15,7 +15,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://4kgwz3nrvsnwdrx4.public.blob.vercel-storage.com https://nominatim.openstreetmap.org; frame-src;"
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://bkvblaaov1rxnrat.public.blob.vercel-storage.com https://nominatim.openstreetmap.org; frame-src;"
           },
         ],
       },
