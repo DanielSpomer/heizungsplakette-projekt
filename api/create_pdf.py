@@ -271,7 +271,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
             (row_data.get('heizungstechnik', ''), 160, 392, 'left', 13, 'bold', 150),
             (row_data.get('energietraeger', ''), 173, 362, 'left', 13, 'bold', None),
             (energy_date, 184, 331, 'left', 13, 'bold', None),
-            (name, 229.5, 300, 'left', 13, 'bold', 250),
+            (name, 229.5, 300.5, 'left', 13, 'bold', 250),
             (row_data.get('baujahr', ''), 456, 422, 'left', 13, 'bold', None),
             (efh, 356, 392, 'left', 13, 'bold', None),
             (central, 419, 362, 'left', 13, 'bold', None),
