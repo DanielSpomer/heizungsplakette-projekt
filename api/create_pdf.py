@@ -205,7 +205,6 @@ def upload_to_vercel_blob(pdf_bytes, filename):
 def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     print(f"DEBUG: generate_pdf_in_memory called. Received row_data (first 500 chars): {json.dumps(dict(row_data), default=str)[:500]}")
     script_dir = os.path.dirname(__file__)
-    full_template_path = os.path.join(script_dir, template_path)
     font_base_path = os.path.join(script_dir, "fonts")
     try:
         montserrat_regular_path = os.path.join(font_base_path, "Montserrat-Regular.ttf")
@@ -215,6 +214,35 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
         print("Successfully registered Montserrat fonts.")
     except Exception as e:
         print(f"⚠️ Error registering fonts: {e}. Falling back to default fonts.")
+
+    # Conditional logic for template and year text
+    darf_weiterbetrieben_werden = True
+    display_year_text = '2044'
+    template_to_use = "template_blanco.pdf"
+
+    try:
+        baujahr_str = str(row_data.get('baujahr', '0')).strip()
+        if baujahr_str.isdigit():
+            baujahr = int(baujahr_str)
+            if baujahr > 0: # Basic validation for baujahr
+                heizung_alter = datetime.now().year - baujahr
+                heizungstechnik = str(row_data.get('heizungstechnik', '')).strip().lower()
+                
+                # Conditions for "kein Weiterbetrieb"
+                if heizung_alter > 30 and heizungstechnik not in ['brennwerttechnik', 'niedertemperaturkessel']:
+                    darf_weiterbetrieben_werden = False
+                    template_to_use = "template_blanco_kein_weiterbetrieb.pdf"
+                    display_year_text = '' # No year text if "kein Weiterbetrieb"
+        else:
+            print(f"⚠️ Baujahr '{baujahr_str}' is not a valid year string. Defaulting to 'darf_weiterbetrieben_werden = True'.")
+    except ValueError as ve:
+        print(f"⚠️ Error converting Baujahr to int: {ve}. Defaulting to 'darf_weiterbetrieben_werden = True'.")
+    except Exception as e_cond:
+        print(f"⚠️ Error in conditional logic for template: {e_cond}. Defaulting to 'darf_weiterbetrieben_werden = True'.")
+
+
+    full_template_path = os.path.join(script_dir, template_to_use)
+    print(f"DEBUG: Using template: {full_template_path}")
 
     try:
         template_reader = PdfReader(full_template_path)
@@ -276,7 +304,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
             (efh, 356, 392, 'left', 13, 'bold', None),
             (central, 419, 362, 'left', 13, 'bold', None),
             (row_data.get('typenbezeichnung', ''), 443, 331, 'left', 13, 'bold', 100),
-            ('2044', 345, 254, 'left', 18, 'bold', None), 
+            (display_year_text, 345, 254, 'left', 18, 'bold', None), 
             (photo_note, 43, 170, 'left', 11, 'normal', None),
             (datetime.now().strftime("%d.%m.%Y"), 107, 126, 'center', 11, 'normal', None),
         ],
@@ -554,6 +582,46 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
         template_reader = PdfReader(template_path)
         writer = PdfWriter()
 
+        # Conditional logic for template and year text
+        darf_weiterbetrieben_werden = True
+        display_year_text = '2044'
+        final_template_path = template_path # Fallback to original if logic fails
+
+        try:
+            baujahr_str = str(data.get('baujahr', '0')).strip()
+            if baujahr_str.isdigit():
+                baujahr = int(baujahr_str)
+                if baujahr > 0:
+                    heizung_alter = datetime.now().year - baujahr
+                    heizungstechnik = str(data.get('heizungstechnik', '')).strip().lower()
+                    
+                    current_template_name = "template_blanco.pdf"
+                    if heizung_alter > 30 and heizungstechnik not in ['brennwerttechnik', 'niedertemperaturkessel']:
+                        darf_weiterbetrieben_werden = False
+                        current_template_name = "template_blanco_kein_weiterbetrieb.pdf"
+                        display_year_text = ''
+                    final_template_path = os.path.join(script_dir, current_template_name)
+            else:
+                 print(f"⚠️ Baujahr '{baujahr_str}' is not a valid year string for recreate. Defaulting to original template.")
+        except ValueError as ve:
+            print(f"⚠️ Error converting Baujahr to int for recreate: {ve}. Defaulting to original template.")
+        except Exception as e_cond:
+            print(f"⚠️ Error in conditional logic for recreate template: {e_cond}. Defaulting to original template.")
+
+        print(f"DEBUG: Recreate PDF using template: {final_template_path}")
+        try:
+            template_reader = PdfReader(final_template_path)
+        except FileNotFoundError:
+            print(f"⚠️ PDF Template not found for recreate: {final_template_path}. Falling back to initially provided template_path: {template_path}")
+            # Fallback to the originally determined template path if the conditional one is not found
+            # This might happen if template_path was already the 'kein_weiterbetrieb' version, or if base 'template_blanco.pdf' is missing.
+            # For safety, try to read the original template_path if conditional one fails.
+            try:
+                 template_reader = PdfReader(template_path) # template_path is os.path.join(script_dir, "template_blanco.pdf") by default
+            except FileNotFoundError:
+                 print(f"CRITICAL ⚠️: Fallback template also not found: {template_path}")
+                 raise # Re-raise if the ultimate fallback template is also missing
+
         name = f"{data.get('vorname', '')} {data.get('nachname', '')}"
         energy_date = parse_date(data.get('energieausweisDate')) if data.get('energieausweis') == 'Ja' else "Nicht vorhanden"
         efh = 'Ja' if data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
@@ -584,7 +652,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                 (efh, 356, 392, 'left', 13, 'bold', None),
                 (central, 419, 362, 'left', 13, 'bold', None),
                 (data.get('typenbezeichnung', ''), 443, 331, 'left', 13, 'bold', 100),
-                ('2044', 345, 254, 'left', 18, 'bold', None),
+                (display_year_text, 345, 254, 'left', 18, 'bold', None),
                 (photo_note, 43, 170, 'left', 11, 'normal', None),
                 (datetime.now().strftime("%d.%m.%Y"), 107, 126, 'center', 11, 'normal', None),
             ],
