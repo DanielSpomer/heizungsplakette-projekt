@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, MoreHorizontal, Edit, Eye, Check, X, Sun, Moon, FileText } from 'lucide-react'
+import { Search, MoreHorizontal, Edit, Eye, Check, X, Sun, Moon, FileText, Download } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -785,6 +785,22 @@ export default function Page() {
                           <Eye className="mr-2 h-4 w-4" />
                             PDF anzeigen
                         </DropdownMenuItem>
+                        )}
+                        {item.pdfUrl && (
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = item.pdfUrl!;
+                              link.setAttribute('download', `heizungsplakette-${item.id}-${item.nachname || 'details'}.pdf`);
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            className="dark:text-gray-300 dark:hover:bg-gray-700/50"
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            PDF herunterladen
+                          </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
