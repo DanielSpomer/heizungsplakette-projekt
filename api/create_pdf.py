@@ -224,7 +224,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
         
     writer = PdfWriter()
     name = f"{row_data.get('vorname', '')} {row_data.get('nachname', '')}"
-    energy_date = parse_date(row_data.get('energieausweisDate')) if row_data.get('energieausweis') == 'Ja' else ""
+    energy_date = parse_date(row_data.get('energieausweisDate')) if row_data.get('energieausweis') == 'Ja' else "Nicht vorhanden"
     efh = 'Ja' if row_data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
     central = 'Ja' if row_data.get('heizsystem') == 'Zentralheizung' else 'Nein'
 
@@ -555,7 +555,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
         writer = PdfWriter()
 
         name = f"{data.get('vorname', '')} {data.get('nachname', '')}"
-        energy_date = parse_date(data.get('energieausweisDate')) if data.get('energieausweis') == 'Ja' else ""
+        energy_date = parse_date(data.get('energieausweisDate')) if data.get('energieausweis') == 'Ja' else "Nicht vorhanden"
         efh = 'Ja' if data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
         central = 'Ja' if data.get('heizsystem') == 'Zentralheizung' else 'Nein'
 

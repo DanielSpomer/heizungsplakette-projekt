@@ -108,8 +108,8 @@ export default function HeizungsplaketteHomepage() {
                 router.push('/heizungsplakette');
               }}
             >
-              Jetzt bestellen
-              <ArrowRight className="ml-2 h-5 w-5" />
+                Jetzt bestellen
+                <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </motion.div>
         </motion.div>

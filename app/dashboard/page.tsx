@@ -408,13 +408,43 @@ export default function Page() {
 
   // Helper to get all images for the current previewed item
   const getAllImagesForPreview = () => {
-    const item = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl) || heizungsplaketten.find(p => String(p.id) === String(pdfPreviewUrl?.split('-')[1]));
+    const item = (() => {
+      if (!pdfPreviewUrl) return null;
+      let foundItem = heizungsplaketten.find(p => p.pdfUrl === pdfPreviewUrl);
+      if (foundItem) return foundItem;
+
+      // Fallback to extract ID from URL like ".../heizungsplakette-ID.pdf"
+      const urlParts = pdfPreviewUrl.split('/');
+      const fileNameWithPotentialId = urlParts[urlParts.length - 1]; // e.g., heizungsplakette-ID.pdf
+      
+      if (fileNameWithPotentialId && fileNameWithPotentialId.includes('-')) {
+        const nameAndIdParts = fileNameWithPotentialId.split('-');
+        const potentialIdWithExt = nameAndIdParts[nameAndIdParts.length -1]; // e.g., ID.pdf
+        if (potentialIdWithExt) {
+          const idStr = potentialIdWithExt.split('.')[0]; // Get "ID"
+          if (idStr) {
+            foundItem = heizungsplaketten.find(p => String(p.id) === idStr);
+            if (foundItem) return foundItem;
+          }
+        }
+      }
+      return null;
+    })();
+
     if (!item) return [];
+
+    const filterAndMap = (urlsArray: string[] | undefined, label: string) => {
+      if (!urlsArray || !Array.isArray(urlsArray)) return [];
+      return urlsArray
+        .filter(url => typeof url === 'string' && url.trim() !== '')
+        .map((url: string) => ({ url, label }));
+    };
+
     return [
-      ...(item.heizungsanlageFotos || []).map((url: string) => ({ url, label: 'Foto zur Heizungsanlage' })),
-      ...(item.heizungsetiketteFotos || []).map((url: string) => ({ url, label: 'Foto zum Typenschild' })),
-      ...(item.heizungslabelFotos || []).map((url: string) => ({ url, label: 'Foto zum Heizungslabel' })),
-      ...(item.bedienungsanleitungFotos || []).map((url: string) => ({ url, label: 'Foto zur Bedienungsanleitung' })),
+      ...filterAndMap(item.heizungsanlageFotos, 'Foto zur Heizungsanlage'),
+      ...filterAndMap(item.heizungsetiketteFotos, 'Foto zum Typenschild'),
+      ...filterAndMap(item.heizungslabelFotos, 'Foto zum Heizungslabel'),
+      ...filterAndMap(item.bedienungsanleitungFotos, 'Foto zur Bedienungsanleitung'),
     ];
   };
 
@@ -633,28 +663,28 @@ export default function Page() {
                   <div className="font-semibold mb-2 text-sm text-gray-700 dark:text-gray-300">{label} {index + 1}</div>
                   <div className="relative w-full h-40 md:h-48 mb-3 bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center overflow-hidden rounded-md">
                     <Image
-                      src={url}
+                        src={url} 
                       alt={`${label} ${index + 1}`}
                       width={300} 
                       height={225} 
-                      className="max-w-full max-h-full object-contain"
-                      style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }}
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-between">
-                    {[0, 90, 180, 270].map(deg => (
-                      <Button
-                        key={deg}
+                        className="max-w-full max-h-full object-contain" 
+                        style={{ transform: `rotate(${imageRotations[url] || 0}deg)` }} 
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-between">
+                      {[0, 90, 180, 270].map(deg => (
+                        <Button
+                          key={deg}
                         variant={(imageRotations[url] || 0) === deg ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleSetRotation(url, deg)}
+                          size="sm"
+                          onClick={() => handleSetRotation(url, deg)}
                         className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                      >
+                        >
                         {deg}°
-                      </Button>
-                    ))}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                </div>
               ))}
               <Button
                 onClick={handleRegeneratePdf}

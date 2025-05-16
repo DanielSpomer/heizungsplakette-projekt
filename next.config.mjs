@@ -1,3 +1,4 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
     return [
@@ -25,11 +26,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '4kgwz3nrvsnwdrx4.public.blob.vercel-storage.com',
+        hostname: 'bkvblaaov1rxnrat.public.blob.vercel-storage.com',
         port: '',
-        pathname: '/**', // Or a more specific path if needed
+        pathname: '/**', // This allows any path under this hostname
       },
-      // You can add other hostnames here if needed
+      // You can add other hostnames here if needed in the future
     ],
   },
   // ... other configurations
