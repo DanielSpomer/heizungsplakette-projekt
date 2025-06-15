@@ -156,7 +156,7 @@ export default function HeizungsplaketteMaske() {
         console.log("Herkunft gesetzt auf: Immoscout") // Debugging-Ausgabe
       } else {
         setHerkunft("Heizungsplakette")
-        setShowWelcomeScreen(false) // Skip welcome screen for main site
+        setShowWelcomeScreen(true) // Skip welcome screen for main site
         console.log("Herkunft gesetzt auf: Heizungsplakette") // Debugging-Ausgabe
       }
     }
