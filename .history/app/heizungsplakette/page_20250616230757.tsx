@@ -38,7 +38,6 @@ import DatePicker from "react-datepicker" // Import react-datepicker
 import "react-datepicker/dist/react-datepicker.css" // Import its CSS
 import imageCompression from "browser-image-compression" // Import the library
 
-// Interface für die Formulardaten
 interface FormData {
   datenschutzUndNutzungsbedingungen: boolean
   einwilligungDatenverarbeitung: boolean
@@ -85,13 +84,9 @@ interface FormData {
   herkunft?: string
 }
 
-// Hauptkomponente für die Heizungsplakette-Maske
 export default function HeizungsplaketteMaske() {
-  // State-Variablen für die Formular-Verwaltung
   const [currentStep, setCurrentStep] = useState(1)
   const [visitedSteps, setVisitedSteps] = useState<number[]>([1])
-
-  // Initialisierung der Formulardaten
   const [formData, setFormData] = useState<FormData>({
     datenschutzUndNutzungsbedingungen: false,
     einwilligungDatenverarbeitung: false,
@@ -137,8 +132,6 @@ export default function HeizungsplaketteMaske() {
     energielabel: "",
     herkunft: "",
   })
-
-  // State-Variablen für Fehlerbehandlung und UI-Status
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [addressValidationMessage, setAddressValidationMessage] = useState<string | null>(null)
   const [herkunft, setHerkunft] = useState<string>("Heizungsplakette")
@@ -150,10 +143,8 @@ export default function HeizungsplaketteMaske() {
   const [isCompressing, setIsCompressing] = useState(false) // New state for compression status
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(false) // New state for welcome screen
 
-  // Router für Navigation
   const router = useRouter() // Moved router initialization up
 
-  // Effect für die Herkunfts-Erkennung basierend auf der Subdomain
   useEffect(() => {
     // Check if we're running in a browser environment
     if (typeof window !== "undefined") {
@@ -223,7 +214,6 @@ export default function HeizungsplaketteMaske() {
     }
   }, [currentStep, orderId, router, isPollingPaymentStatus])
 
-  // Funktion zum Öffnen des Payment-Popups
   const handleOpenPaymentPopup = () => {
     const popupWidth = 900
     const popupHeight = 800
@@ -257,7 +247,6 @@ export default function HeizungsplaketteMaske() {
     }
   }
 
-  // Listen der Heizungshersteller für verschiedene Heizungsarten
   const herstellerListeOelGas = [
     "Viessmann",
     "Bosch Thermotechnik (Buderus)",
@@ -309,7 +298,6 @@ export default function HeizungsplaketteMaske() {
     "Rotex (Teil von Daikin)",
   ]
 
-  // Handler für Input-Änderungen
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -318,7 +306,6 @@ export default function HeizungsplaketteMaske() {
     }))
   }
 
-  // Handler für Datum-Änderungen
   const handleDateChange = (date: Date | null, name: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -326,17 +313,14 @@ export default function HeizungsplaketteMaske() {
     }))
   }
 
-  // Handler für Select-Änderungen
   const handleSelectChange = (name: string) => (value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Handler für Checkbox-Änderungen
   const handleCheckboxChange = (name: string) => (checked: boolean) => {
     setFormData((prev) => ({ ...prev, [name]: checked }))
   }
 
-  // Handler für Datei-Uploads mit Bildkomprimierung
   const handleFileChange =
     (
       name: keyof Pick<
@@ -408,21 +392,17 @@ export default function HeizungsplaketteMaske() {
       }
     }
 
-  // Validierungsfunktion für jeden Schritt
   const validateStep = async (step: number) => {
     // Make validateStep async
     const newErrors: Record<string, string> = {}
 
-    // Validierung für Schritt 1: Richtlinien und Bedingungen
     if (step === 1) {
       if (!formData.datenschutzUndNutzungsbedingungen)
         newErrors.datenschutzUndNutzungsbedingungen =
           "Bitte stimmen Sie den Datenschutzhinweisen, der Widerrufsbelehrung und den Nutzungsbedingungen zu."
       if (!formData.aufforderungSofortigeTaetigkeit)
         newErrors.aufforderungSofortigeTaetigkeit = "Bitte bestätigen Sie die Aufforderung zur sofortigen Tätigkeit."
-    }
-    // Validierung für Schritt 2: Grundlegende Informationen
-    else if (step === 2) {
+    } else if (step === 2) {
       if (!formData.artDerImmobilie) newErrors.artDerImmobilie = "Bitte wählen Sie die Art der Immobilie."
       if (formData.artDerImmobilie === "Sonstige" && !formData.artDerImmobilieSonstige) {
         newErrors.artDerImmobilieSonstige = "Bitte spezifizieren Sie die Art der Immobilie."
@@ -433,9 +413,7 @@ export default function HeizungsplaketteMaske() {
       }
       if (!formData.alterDerHeizung) newErrors.alterDerHeizung = "Bitte wählen Sie das Alter der Heizung."
       if (!formData.email) newErrors.email = "Bitte geben Sie Ihre E-Mail-Adresse ein."
-    }
-    // Validierung für Schritt 3: Adresse der Immobilie
-    else if (step === 3) {
+    } else if (step === 3) {
       if (!formData.strasse) newErrors.strasse = "Bitte geben Sie die Straße an."
       if (!formData.hausnummer) newErrors.hausnummer = "Bitte geben Sie die Hausnummer an."
       if (!formData.postleitzahl) newErrors.postleitzahl = "Bitte geben Sie die Postleitzahl an."
@@ -452,9 +430,7 @@ export default function HeizungsplaketteMaske() {
         // Ensure addressValidationMessage is cleared or set appropriately if fields are empty
         setAddressValidationMessage("Bitte füllen Sie alle Adressfelder aus, um die Adresse zu validieren.")
       }
-    }
-    // Validierung für Schritt 4: Angaben zur Heizung und persönliche Daten
-    else if (step === 4) {
+    } else if (step === 4) {
       // Baujahr validation based on alterDerHeizung
       const currentYear = new Date().getFullYear()
       if (!formData.baujahr) {
@@ -508,7 +484,6 @@ export default function HeizungsplaketteMaske() {
         }
       }
 
-      // Validierung der Heizungsangaben
       if (!formData.heizungshersteller) newErrors.heizungshersteller = "Bitte wählen Sie einen Heizungshersteller."
       if (!formData.typenbezeichnung && !formData.typenbezeichnungUnbekannt) {
         newErrors.typenbezeichnung = "Bitte geben Sie die Typenbezeichnung an oder wählen Sie 'Unbekannt'."
@@ -541,8 +516,6 @@ export default function HeizungsplaketteMaske() {
           newErrors.energieausweisDate = "Das Datum des Energieausweises darf nicht vor dem Baujahr der Heizung liegen."
         }
       }
-
-      // Validierung der persönlichen Daten
       if (!formData.vorname) newErrors.vorname = "Bitte geben Sie Ihren Vornamen an."
       if (!formData.nachname) newErrors.nachname = "Bitte geben Sie Ihren Nachnamen an."
       if (!formData.personStrasse) newErrors.personStrasse = "Bitte geben Sie Ihre Straße an."
@@ -550,9 +523,7 @@ export default function HeizungsplaketteMaske() {
       if (!formData.personPostleitzahl) newErrors.personPostleitzahl = "Bitte geben Sie Ihre Postleitzahl an."
       if (!formData.personOrt) newErrors.personOrt = "Bitte geben Sie Ihren Ort an."
       if (!formData.istEigentuemer) newErrors.istEigentuemer = "Bitte geben Sie an, ob Sie der Eigentümer sind."
-    }
-    // Validierung für Schritt 5: Fotos hochladen
-    else if (step === 5) {
+    } else if (step === 5) {
       if (!formData.verzichtAufHeizungsanlageFotos && formData.heizungsanlageFotos.length === 0) {
         newErrors.heizungsanlageFotos =
           "Bitte laden Sie mindestens ein Foto (maximal 3) der Heizungsanlage hoch oder verzichten Sie ausdrücklich darauf."
@@ -571,9 +542,7 @@ export default function HeizungsplaketteMaske() {
         newErrors.bedienungsanleitungFotos =
           "Bitte laden Sie mindestens ein Foto (maximal 3) der Bedienungsanleitung hoch oder verzichten Sie ausdrücklich darauf."
       }
-    }
-    // Validierung für Schritt 6: Zusammenfassung und Bestätigung
-    else if (step === 6) {
+    } else if (step === 6) {
       if (!formData.confirmAccuracy) newErrors.confirmAccuracy = "Bitte bestätigen Sie die Richtigkeit Ihrer Angaben."
     }
 
@@ -581,7 +550,6 @@ export default function HeizungsplaketteMaske() {
     return Object.keys(newErrors).length === 0
   }
 
-  // Funktion zur Adressvalidierung über OpenStreetMap API
   const validateAddress = async () => {
     const { strasse, hausnummer, postleitzahl, ort } = formData
     if (strasse && hausnummer && postleitzahl && ort) {
@@ -611,7 +579,6 @@ export default function HeizungsplaketteMaske() {
     }
   }
 
-  // Hauptfunktion für das Formular-Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // Validate the current step before proceeding or submitting
@@ -667,7 +634,6 @@ export default function HeizungsplaketteMaske() {
           return urls
         }
 
-        // Upload aller Bildkategorien
         const heizungsanlageUrls = await uploadField(formData.heizungsanlageFotos)
         const heizungsetiketteUrls = await uploadField(formData.heizungsetiketteFotos)
         const heizungslabelUrls = await uploadField(formData.heizungslabelFotos)
@@ -717,14 +683,12 @@ export default function HeizungsplaketteMaske() {
     }
   }
 
-  // Funktion für die Schritt-Navigation
   const handleStepClick = (step: number) => {
     if (visitedSteps.includes(step) || step <= currentStep) {
       setCurrentStep(step)
     }
   }
 
-  // Funktion für den Zurück-Button
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1)
@@ -733,7 +697,6 @@ export default function HeizungsplaketteMaske() {
     }
   }
 
-  // Handler für die Checkbox "Gleiche Adresse"
   const handleSameAddressCheckboxChange = (checked: boolean) => {
     setPersonalAddressIsSameAsPropertyAddress(checked)
     if (checked) {
@@ -757,16 +720,14 @@ export default function HeizungsplaketteMaske() {
     }
   }
 
-  // Handler für den Welcome-Screen
   const handleWelcomeContinue = () => {
     setShowWelcomeScreen(false)
   }
 
-  // Welcome Screen für eigentuemer subdomain
+  // Welcome Screen for eigentuemer subdomain
   if (showWelcomeScreen) {
     return (
       <div className="min-h-screen bg-background">
-        {/* Header für Welcome Screen */}
         <header className="bg-card shadow-sm" role="banner">
           <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
             <Link href="/" aria-label="Go to homepage">
@@ -781,9 +742,7 @@ export default function HeizungsplaketteMaske() {
           </div>
         </header>
 
-        {/* Hauptinhalt des Welcome Screens */}
         <main className="max-w-6xl mx-auto py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
-          {/* Willkommens-Titel */}
           <div className="text-center mb-12 sm:mb-16">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-gray-900">
               Willkommen zur Heizungsplakette
@@ -795,7 +754,6 @@ export default function HeizungsplaketteMaske() {
 
           {/* Benefits Section */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
-            {/* Rechtssicherheit */}
             <div className="text-center p-4 sm:p-6 bg-white rounded-lg shadow-sm border">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                 <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
@@ -807,7 +765,6 @@ export default function HeizungsplaketteMaske() {
               </p>
             </div>
 
-            {/* Schnelle Bearbeitung */}
             <div className="text-center p-4 sm:p-6 bg-white rounded-lg shadow-sm border">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                 <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
@@ -819,7 +776,6 @@ export default function HeizungsplaketteMaske() {
               </p>
             </div>
 
-            {/* Expertenprüfung */}
             <div className="text-center p-4 sm:p-6 bg-white rounded-lg shadow-sm border">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                 <Award className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
@@ -873,10 +829,8 @@ export default function HeizungsplaketteMaske() {
     )
   }
 
-  // Hauptformular-Rendering
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card shadow-sm" role="banner">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" aria-label="Go to homepage">
@@ -891,12 +845,9 @@ export default function HeizungsplaketteMaske() {
         </div>
       </header>
 
-      {/* Hauptinhalt */}
       <main className="max-w-4xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         <div className="bg-card shadow-xl rounded-lg p-6 sm:p-8 lg:p-10">
           <h1 className="sr-only">Heizungsplakette Antragsformular</h1>
-
-          {/* Fortschrittsanzeige */}
           <nav aria-label="Fortschritt" className="mb-8 sm:mb-12">
             <div className="flex items-center w-full overflow-x-auto pb-2">
               {[1, 2, 3, 4, 5, 6, 7].map((stepValue, index, arr) => {
@@ -922,7 +873,7 @@ export default function HeizungsplaketteMaske() {
                       aria-current={isCurrent ? "step" : undefined}
                       aria-label={`Schritt ${stepValue}`}
                     >
-                      {isCompleted && <Check className="w-3 h-3 sm:w-4 sm:w-4 text-black" />}
+                      {isCompleted && <Check className="w-3 h-3 sm:w-4 sm:h-4 text-black" />}
                     </button>
 
                     {index < arr.length - 1 && (
@@ -938,10 +889,7 @@ export default function HeizungsplaketteMaske() {
               })}
             </div>
           </nav>
-
-          {/* Formular */}
           <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 mt-6 sm:mt-8">
-            {/* Schritt 1: Richtlinien und Bedingungen */}
             {currentStep === 1 && (
               <div className="step-content-animate-in">
                 <fieldset>
@@ -949,8 +897,6 @@ export default function HeizungsplaketteMaske() {
                     <ClipboardList className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" aria-hidden="true" />
                     Richtlinien und Bedingungen
                   </legend>
-
-                  {/* Einführungstext */}
                   <div className="mb-4 space-y-3 sm:space-y-4 text-sm sm:text-base">
                     <p>Herzlich willkommen bei &bdquo;heizungsplakette.de&ldquo;!</p>
                     <p>
@@ -965,10 +911,7 @@ export default function HeizungsplaketteMaske() {
                     </p>
                     <p>Bei Fragen wenden Sie sich gerne jederzeit per E-Mail an: service@heizungsplakette.de</p>
                   </div>
-
-                  {/* Checkboxen für Zustimmungen */}
                   <div className="space-y-4 sm:space-y-6">
-                    {/* Datenschutz und Nutzungsbedingungen */}
                     <div className="flex items-start space-x-2 sm:space-x-3 text-sm text-gray-700">
                       <Checkbox
                         id="datenschutzUndNutzungsbedingungen"
@@ -1012,8 +955,6 @@ export default function HeizungsplaketteMaske() {
                         {errors.datenschutzUndNutzungsbedingungen}
                       </p>
                     )}
-
-                    {/* Einwilligung Datenverarbeitung */}
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       <Checkbox
                         id="einwilligungDatenverarbeitung"
@@ -1028,8 +969,6 @@ export default function HeizungsplaketteMaske() {
                         kann diese Einwilligungserklärung gegenüber dem Anbieter jederzeit widerrufen
                       </Label>
                     </div>
-
-                    {/* Aufforderung sofortige Tätigkeit */}
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       <Checkbox
                         id="aufforderungSofortigeTaetigkeit"
@@ -1057,8 +996,6 @@ export default function HeizungsplaketteMaske() {
                 </fieldset>
               </div>
             )}
-
-            {/* Schritt 2: Grundlegende Informationen */}
             {currentStep === 2 && (
               <div className="step-content-animate-in">
                 <fieldset>
@@ -1066,9 +1003,7 @@ export default function HeizungsplaketteMaske() {
                     <Home className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" aria-hidden="true" />
                     Grundlegende Informationen
                   </legend>
-
                   <div className="space-y-4 sm:space-y-6">
-                    {/* Art der Immobilie */}
                     <div>
                       <Label htmlFor="artDerImmobilie" className="font-semibold block mb-2">
                         Art der Immobilie *
@@ -1095,8 +1030,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Sonstige Art der Immobilie */}
                     {formData.artDerImmobilie === "Sonstige" && (
                       <div>
                         <Label htmlFor="artDerImmobilieSonstige" className="font-semibold block mb-2">
@@ -1116,8 +1049,6 @@ export default function HeizungsplaketteMaske() {
                         )}
                       </div>
                     )}
-
-                    {/* Heizungsart */}
                     <div>
                       <Label htmlFor="heizungsart" className="font-semibold block mb-2">
                         Heizungsart *
@@ -1143,8 +1074,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Sonstige Heizungsart */}
                     {formData.heizungsart === "Sonstige" && (
                       <div>
                         <Label htmlFor="heizungsartSonstige" className="font-semibold block mb-2">
@@ -1164,8 +1093,6 @@ export default function HeizungsplaketteMaske() {
                         )}
                       </div>
                     )}
-
-                    {/* Alter der Heizung */}
                     <div>
                       <Label htmlFor="alterDerHeizung" className="font-semibold block mb-2">
                         Alter der Heizung *
@@ -1191,8 +1118,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* E-Mail */}
                     <div>
                       <Label htmlFor="email" className="font-semibold block mb-2">
                         E-Mail *
@@ -1216,8 +1141,6 @@ export default function HeizungsplaketteMaske() {
                 </fieldset>
               </div>
             )}
-
-            {/* Schritt 3: Adresse der Immobilie */}
             {currentStep === 3 && (
               <div className="step-content-animate-in">
                 <fieldset>
@@ -1225,9 +1148,7 @@ export default function HeizungsplaketteMaske() {
                     <MapPin className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" aria-hidden="true" />
                     Adresse der Immobilie
                   </legend>
-
                   <div className="space-y-4 sm:space-y-6">
-                    {/* Straße */}
                     <div>
                       <Label htmlFor="strasse" className="font-semibold block mb-2">
                         Straße *
@@ -1246,8 +1167,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Hausnummer */}
                     <div>
                       <Label htmlFor="hausnummer" className="font-semibold block mb-2">
                         Hausnummer *
@@ -1266,8 +1185,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Postleitzahl */}
                     <div>
                       <Label htmlFor="postleitzahl" className="font-semibold block mb-2">
                         Postleitzahl *
@@ -1286,8 +1203,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Ort */}
                     <div>
                       <Label htmlFor="ort" className="font-semibold block mb-2">
                         Ort *
@@ -1306,8 +1221,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Adressvalidierung */}
                     {addressValidationMessage && (
                       <Alert variant={addressValidationMessage.includes("erfolgreich") ? "default" : "destructive"}>
                         <AlertTitle>Adressvalidierung</AlertTitle>
@@ -1318,20 +1231,15 @@ export default function HeizungsplaketteMaske() {
                 </fieldset>
               </div>
             )}
-
-            {/* Schritt 4: Angaben zur Heizung und persönliche Daten */}
             {currentStep === 4 && (
               <div className="step-content-animate-in">
                 <>
-                  {/* Angaben zur Heizung */}
                   <fieldset>
                     <legend className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 flex items-center">
                       <Thermometer className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" aria-hidden="true" />
                       Angaben zur Heizung
                     </legend>
-
                     <div className="space-y-4 sm:space-y-6">
-                      {/* Heizsystem */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <Building className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1357,8 +1265,6 @@ export default function HeizungsplaketteMaske() {
                         </Select>
                         {errors.heizsystem && <p className="text-red-500 text-sm mt-1">{errors.heizsystem}</p>}
                       </div>
-
-                      {/* Sonstiges Heizsystem */}
                       {formData.heizsystem === "Sonstige" && (
                         <div>
                           <Label htmlFor="heizsystemSonstige" className="font-semibold block mb-2">
@@ -1376,8 +1282,6 @@ export default function HeizungsplaketteMaske() {
                           )}
                         </div>
                       )}
-
-                      {/* Heizungshersteller */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <Factory className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1392,7 +1296,7 @@ export default function HeizungsplaketteMaske() {
                             name="heizungshersteller"
                             value={formData.heizungshersteller}
                             onChange={handleInputChange}
-                            placeholder="Geben Sie den Hersteller an"
+                            placeholder="Geben Sie den Herstelleran"
                           />
                         ) : (
                           <Select
@@ -1419,8 +1323,6 @@ export default function HeizungsplaketteMaske() {
                           <p className="text-red-500 text-sm mt-1">{errors.heizungshersteller}</p>
                         )}
                       </div>
-
-                      {/* Baujahr der Heizung */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <Calendar className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1440,8 +1342,6 @@ export default function HeizungsplaketteMaske() {
                         />
                         {errors.baujahr && <p className="text-red-500 text-sm mt-1">{errors.baujahr}</p>}
                       </div>
-
-                      {/* Typenbezeichnung */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <FileText className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1475,8 +1375,6 @@ export default function HeizungsplaketteMaske() {
                           <p className="text-red-500 text-sm mt-1">{errors.typenbezeichnung}</p>
                         )}
                       </div>
-
-                      {/* Heizungstechnik */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <Thermometer className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1505,8 +1403,6 @@ export default function HeizungsplaketteMaske() {
                           <p className="text-red-500 text-sm mt-1">{errors.heizungstechnik}</p>
                         )}
                       </div>
-
-                      {/* Sonstige Heizungstechnik */}
                       {formData.heizungstechnik === "Sonstige" && (
                         <div>
                           <Label htmlFor="heizungstechnikSonstige" className="font-semibold block mb-2">
@@ -1524,8 +1420,6 @@ export default function HeizungsplaketteMaske() {
                           )}
                         </div>
                       )}
-
-                      {/* Energieträger */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <Thermometer className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1555,8 +1449,6 @@ export default function HeizungsplaketteMaske() {
                         </Select>
                         {errors.energietraeger && <p className="text-red-500 text-sm mt-1">{errors.energietraeger}</p>}
                       </div>
-
-                      {/* Sonstiger Energieträger */}
                       {formData.energietraeger === "Sonstige" && (
                         <div>
                           <Label htmlFor="energietraegerSonstige" className="font-semibold block mb-2">
@@ -1574,8 +1466,6 @@ export default function HeizungsplaketteMaske() {
                           )}
                         </div>
                       )}
-
-                      {/* Heizungslabel */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <FileText className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1604,8 +1494,6 @@ export default function HeizungsplaketteMaske() {
                         </RadioGroup>
                         {errors.energielabel && <p className="text-red-500 text-sm mt-1">{errors.energielabel}</p>}
                       </div>
-
-                      {/* Energieausweis */}
                       <div>
                         <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-3">
                           <FileText className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-600" />
@@ -1634,8 +1522,6 @@ export default function HeizungsplaketteMaske() {
                         </RadioGroup>
                         {errors.energieausweis && <p className="text-red-500 text-sm mt-1">{errors.energieausweis}</p>}
                       </div>
-
-                      {/* Datum des Energieausweises */}
                       {formData.energieausweis === "Ja" && (
                         <div>
                           <Label htmlFor="energieausweisDate" className="font-semibold block mb-2">
@@ -1661,16 +1547,13 @@ export default function HeizungsplaketteMaske() {
                       )}
                     </div>
                   </fieldset>
-
-                  {/* Persönliche Daten */}
+                  {/* Persönliche Daten and Eigentümer sections */}
                   <div className="mt-6 sm:mt-8">
                     <h3 className="text-xl sm:text-2xl font-semibold flex items-center mt-4 sm:mt-6 mb-4 sm:mb-6">
                       <User className="h-6 w-6 sm:h-7 sm:w-7 mr-2 sm:mr-3 text-blue-600" />
                       Persönliche Daten
                     </h3>
-
                     <div className="space-y-4 sm:space-y-6">
-                      {/* Vor- und Nachname */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                         <div>
                           <Label htmlFor="vorname" className="font-semibold block mb-2">
@@ -1699,8 +1582,7 @@ export default function HeizungsplaketteMaske() {
                           {errors.nachname && <p className="text-red-500 text-sm mt-1">{errors.nachname}</p>}
                         </div>
                       </div>
-
-                      {/* Checkbox für gleiche Adresse */}
+                      {/* Checkbox for copying address */}
                       <div className="flex items-start space-x-2 sm:space-x-3 pt-2">
                         <Checkbox
                           id="personalAddressIsSame"
@@ -1712,8 +1594,6 @@ export default function HeizungsplaketteMaske() {
                           Meine persönliche Adresse ist identisch mit der Adresse der Immobilie.
                         </Label>
                       </div>
-
-                      {/* Persönliche Adresse */}
                       <div>
                         <Label htmlFor="personStrasse" className="font-semibold block mb-2">
                           Straße *
@@ -1776,14 +1656,11 @@ export default function HeizungsplaketteMaske() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Eigentümer */}
                   <div className="mt-6 sm:mt-8">
                     <h3 className="text-xl sm:text-2xl font-semibold flex items-center mt-4 sm:mt-6 mb-4 sm:mb-6">
                       <Key className="h-6 w-6 sm:h-7 sm:w-7 mr-2 sm:mr-3 text-blue-600" />
                       Eigentümer
                     </h3>
-
                     <div className="space-y-4 sm:space-y-6">
                       <Label htmlFor="istEigentuemer" className="font-semibold block mb-2">
                         Sind Sie der Eigentümer der Immobilie? *
@@ -1812,12 +1689,9 @@ export default function HeizungsplaketteMaske() {
                 </>
               </div>
             )}
-
-            {/* Schritt 5: Fotos hochladen */}
             {currentStep === 5 && (
               <div className="step-content-animate-in">
                 <>
-                  {/* Header mit Tooltip */}
                   <div className="flex items-center justify-between mb-6 sm:mb-8">
                     <h2 className="text-2xl sm:text-3xl font-semibold flex items-center">
                       <Camera className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" />
@@ -1840,9 +1714,7 @@ export default function HeizungsplaketteMaske() {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-
                   <div className="space-y-6 sm:space-y-8">
-                    {/* Fotos der Heizungsanlage */}
                     <div>
                       <Label htmlFor="heizungsanlageFotos" className="font-semibold block mb-2">
                         Fotos der Heizungsanlage (max. 3)
@@ -1882,8 +1754,6 @@ export default function HeizungsplaketteMaske() {
                         <p className="text-red-500 text-sm mt-1">{errors.heizungsanlageFotos}</p>
                       )}
                     </div>
-
-                    {/* Fotos der Typenschildes */}
                     <div>
                       <Label htmlFor="heizungsetiketteFotos" className="font-semibold block mb-2">
                         Fotos der Typenschildes (max. 3)
@@ -1923,8 +1793,6 @@ export default function HeizungsplaketteMaske() {
                         <p className="text-red-500 text-sm mt-1">{errors.heizungsetiketteFotos}</p>
                       )}
                     </div>
-
-                    {/* Foto des Heizungslabels (nur wenn Heizungslabel existiert) */}
                     {formData.energielabel === "Ja" && (
                       <div>
                         <Label htmlFor="heizungslabelFotos" className="font-semibold block mb-2">
@@ -1965,8 +1833,6 @@ export default function HeizungsplaketteMaske() {
                         )}
                       </div>
                     )}
-
-                    {/* Fotos der Bedienungsanleitung */}
                     <div>
                       <Label htmlFor="bedienungsanleitungFotos" className="font-semibold block mb-2">
                         Fotos der Bedienungsanleitung (max. 3)
@@ -2010,8 +1876,6 @@ export default function HeizungsplaketteMaske() {
                 </>
               </div>
             )}
-
-            {/* Schritt 6: Zusammenfassung und Bestätigung */}
             {currentStep === 6 && (
               <div className="step-content-animate-in">
                 <>
@@ -2019,11 +1883,8 @@ export default function HeizungsplaketteMaske() {
                     <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" />
                     Zusammenfassung und Bestätigung
                   </h2>
-
                   <div className="space-y-4 sm:space-y-6 text-gray-700">
                     <h3 className="text-lg sm:text-xl font-semibold text-gray-800">Überprüfen Sie Ihre Angaben:</h3>
-
-                    {/* Grundlegende Informationen */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div className="space-y-2">
                         <p>
@@ -2049,8 +1910,6 @@ export default function HeizungsplaketteMaske() {
                           <strong>E-Mail:</strong> {formData.email}
                         </p>
                       </div>
-
-                      {/* Adresse der Immobilie */}
                       <div className="space-y-2">
                         <p>
                           <strong>Adresse der Immobilie:</strong>
@@ -2063,8 +1922,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       </div>
                     </div>
-
-                    {/* Angaben zur Heizung */}
                     <div className="space-y-2">
                       <h4 className="font-semibold">Angaben zur Heizung:</h4>
                       <p>
@@ -2119,8 +1976,6 @@ export default function HeizungsplaketteMaske() {
                         </p>
                       )}
                     </div>
-
-                    {/* Persönliche Daten */}
                     <div className="space-y-2">
                       <h4 className="font-semibold">Persönliche Daten:</h4>
                       <p>
@@ -2136,8 +1991,6 @@ export default function HeizungsplaketteMaske() {
                         <strong>Eigentümer:</strong> {formData.istEigentuemer}
                       </p>
                     </div>
-
-                    {/* Hochgeladene Dokumente */}
                     <div className="space-y-2">
                       <h4 className="font-semibold">Hochgeladene Dokumente:</h4>
                       <p>
@@ -2175,8 +2028,6 @@ export default function HeizungsplaketteMaske() {
                             : "Keine"}
                       </p>
                     </div>
-
-                    {/* Bestätigungscheckbox */}
                     <div className="flex items-start space-x-2">
                       <Checkbox
                         id="confirmAccuracy"
@@ -2193,8 +2044,6 @@ export default function HeizungsplaketteMaske() {
                 </>
               </div>
             )}
-
-            {/* Schritt 7: Bezahlung */}
             {currentStep === 7 && (
               <div className="step-content-animate-in">
                 <fieldset>
@@ -2202,17 +2051,13 @@ export default function HeizungsplaketteMaske() {
                     <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 mr-2 sm:mr-3 text-blue-600" aria-hidden="true" />
                     Bezahlung
                   </legend>
-
                   <div className="space-y-4 sm:space-y-6">
-                    {/* Fehleranzeige */}
                     {submitError && !isPollingPaymentStatus && (
                       <Alert variant="destructive" className="mb-4">
                         <AlertTitle>Fehler</AlertTitle>
                         <AlertDescription>{submitError}</AlertDescription>
                       </Alert>
                     )}
-
-                    {/* Preisübersicht */}
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                       <h3 className="text-lg font-semibold mb-2">Heizungsplakette – Ihre Sicherheit auf einen Blick</h3>
                       <p className="text-gray-600 mb-4">Bestellen Sie Ihre Heizungsplakette</p>
@@ -2221,8 +2066,6 @@ export default function HeizungsplaketteMaske() {
                         <span className="font-semibold">49,00 €</span>
                       </div>
                     </div>
-
-                    {/* Polling-Status */}
                     {isPollingPaymentStatus && (
                       <Alert variant="default" className="mt-4">
                         <AlertTitle>Warte auf Zahlungsbestätigung...</AlertTitle>
@@ -2232,8 +2075,6 @@ export default function HeizungsplaketteMaske() {
                         </AlertDescription>
                       </Alert>
                     )}
-
-                    {/* Bezahlung-Button */}
                     <div className="flex justify-center">
                       <Button
                         onClick={handleOpenPaymentPopup}
@@ -2243,8 +2084,6 @@ export default function HeizungsplaketteMaske() {
                         {isPollingPaymentStatus ? "Zahlungs-Popup aktiv (erneut öffnen)" : "Zur Bezahlung"}
                       </Button>
                     </div>
-
-                    {/* Hinweise */}
                     {!isPollingPaymentStatus && orderId && (
                       <p className="text-sm text-gray-500 text-center mt-3 sm:mt-4 px-4">
                         Falls das Zahlungsfenster nicht erschienen ist, oder Sie es geschlossen haben, klicken Sie bitte
@@ -2256,8 +2095,6 @@ export default function HeizungsplaketteMaske() {
                 </fieldset>
               </div>
             )}
-
-            {/* Navigation (außer bei Schritt 7) */}
             {currentStep !== 7 && ( // Hide main navigation on Step 7 (Payment step)
               <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-8 sm:mt-10">
                 <Button
@@ -2284,8 +2121,6 @@ export default function HeizungsplaketteMaske() {
           </form>
         </div>
       </main>
-
-      {/* CSS-Animationen */}
       <style jsx global>{`
         @keyframes fadeInSlideUp {
           from {

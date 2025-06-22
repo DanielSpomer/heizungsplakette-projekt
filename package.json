@@ -46,7 +46,6 @@
     "react-datepicker": "^8.3.0",
     "react-dom": "^18",
     "react-pdf": "^9.2.1",
-    "shadcn-ui": "^0.2.3",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7"
   },
@@ -59,6 +58,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.9",
     "postcss": "^8",
+    "shadcn-ui": "^0.9.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   },

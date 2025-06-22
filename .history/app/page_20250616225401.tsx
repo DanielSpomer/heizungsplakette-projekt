@@ -75,7 +75,7 @@ export default function HeizungsplaketteHomepage() {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-6 lg:space-x-8">
               <Link href="#story" className="text-gray-600 hover:text-gray-900 transition-colors text-sm lg:text-base">
-                Unsere Mission
+                Unsere Geschichte
               </Link>
               <Link
                 href="#process"
