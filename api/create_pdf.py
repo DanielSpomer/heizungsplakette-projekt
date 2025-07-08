@@ -323,7 +323,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     )
     
     # Adjust Y coordinates for kein_weiterbetrieb template
-    y_offset = 20 if template_to_use == "template_blanco_kein_weiterbetrieb.pdf" else 0
+    y_offset = -10 if template_to_use == "template_blanco_kein_weiterbetrieb.pdf" else 0
     
     fields = {
         0: [
@@ -665,7 +665,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
             "Es wurden Fotos bereitgestellt, welche ab Seite 3 abgebildet sind."
         )
         # Adjust Y coordinates for kein_weiterbetrieb template
-        y_offset = 20 if template_to_use == "template_blanco_kein_weiterbetrieb.pdf" else 0
+        y_offset = -10 if template_to_use == "template_blanco_kein_weiterbetrieb.pdf" else 0
         
         fields = {
             0: [
