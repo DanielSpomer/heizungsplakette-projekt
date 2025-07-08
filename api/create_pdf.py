@@ -110,18 +110,50 @@ def create_overlay(fields, width=A4[0], height=A4[1]):
                 print(f"Traceback:\n{traceback.format_exc()}")
             continue
 
+        # Handle special case for typenbezeichnung field (check if it's at position 443, with y either 331 or 351)
+        is_typenbezeichnung = len(field) >= 3 and field[1] == 443 and (field[2] == 331 or field[2] == 351)
+        
         text, x, y, align, size, weight, max_width = field[:7]
         font = "Montserrat-Bold" if weight == "bold" else "Montserrat"
         text = str(text if text is not None else "")
 
-        while size > 4 and max_width and c.stringWidth(text, font, size) > max_width:
-            size -= 0.5
+        if is_typenbezeichnung and max_width and c.stringWidth(text, font, size) > max_width:
+            # Handle line wrapping for typenbezeichnung
+            words = text.split()
+            lines = []
+            current_line = ""
+            
+            for word in words:
+                test_line = current_line + (" " if current_line else "") + word
+                if c.stringWidth(test_line, font, size) <= max_width:
+                    current_line = test_line
+                else:
+                    if current_line:
+                        lines.append(current_line)
+                    current_line = word
+            
+            if current_line:
+                lines.append(current_line)
+            
+            # Draw each line
+            c.setFont(font, size)
+            for i, line in enumerate(lines[:2]):  # Limit to 2 lines
+                line_y = y - (i * 15)  # 15 pixels line spacing
+                if align == "center":
+                    line_x = x - c.stringWidth(line, font, size) / 2
+                else:
+                    line_x = x
+                c.drawString(line_x, line_y, line)
+        else:
+            # Regular text handling
+            while size > 4 and max_width and c.stringWidth(text, font, size) > max_width:
+                size -= 0.5
 
-        c.setFont(font, size)
-        if align == "center":
-            x -= c.stringWidth(text, font, size) / 2
+            c.setFont(font, size)
+            if align == "center":
+                x -= c.stringWidth(text, font, size) / 2
 
-        c.drawString(x, y, text)
+            c.drawString(x, y, text)
 
     c.save()
     buf.seek(0)
@@ -290,27 +322,30 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
         "Es wurden Fotos bereitgestellt, welche ab Seite 3 abgebildet sind."
     )
     
+    # Adjust Y coordinates for kein_weiterbetrieb template
+    y_offset = 20 if template_to_use == "template_blanco_kein_weiterbetrieb.pdf" else 0
+    
     fields = {
         0: [
-            (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')},", 298, 494, 'center', 20, "bold", 210),
-            (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 298, 474, 'center', 20, "bold", 210),
-            (row_data.get('heizungsart', ''), 300, 595, 'center', 20, 'bold', None),
-            (row_data.get('heizungshersteller', ''), 225, 422, 'left', 13, 'bold', 90),
-            (row_data.get('heizungstechnik', ''), 160, 392, 'left', 13, 'bold', 150),
-            (row_data.get('energietraeger', ''), 173, 362, 'left', 13, 'bold', None),
-            (energy_date, 184, 331, 'left', 13, 'bold', None),
-            (name, 229.5, 300.5, 'left', 13, 'bold', 250),
-            (row_data.get('baujahr', ''), 456, 422, 'left', 13, 'bold', None),
-            (efh, 356, 392, 'left', 13, 'bold', None),
-            (central, 419, 362, 'left', 13, 'bold', None),
-            (row_data.get('typenbezeichnung', ''), 443, 331, 'left', 13, 'bold', 100),
-            (display_year_text, 345, 254, 'left', 18, 'bold', None), 
-            (photo_note, 43, 170, 'left', 11, 'normal', None),
-            (datetime.now().strftime("%d.%m.%Y"), 107, 126, 'center', 11, 'normal', None),
+            (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')},", 298, 494 + y_offset, 'center', 20, "bold", 210),
+            (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 298, 474 + y_offset, 'center', 20, "bold", 210),
+            (row_data.get('heizungsart', ''), 300, 595 + y_offset, 'center', 20, 'bold', None),
+            (row_data.get('heizungshersteller', ''), 225, 422 + y_offset, 'left', 13, 'bold', 90),
+            (row_data.get('heizungstechnik', ''), 160, 392 + y_offset, 'left', 13, 'bold', 150),
+            (row_data.get('energietraeger', ''), 173, 362 + y_offset, 'left', 13, 'bold', None),
+            (energy_date, 184, 331 + y_offset, 'left', 13, 'bold', None),
+            (name, 229.5, 300.5 + y_offset, 'left', 13, 'bold', 250),
+            (row_data.get('baujahr', ''), 456, 422 + y_offset, 'left', 13, 'bold', None),
+            (efh, 356, 392 + y_offset, 'left', 13, 'bold', None),
+            (central, 419, 362 + y_offset, 'left', 13, 'bold', None),
+            (row_data.get('typenbezeichnung', ''), 443, 331 + y_offset, 'left', 13, 'bold', 100),
+            (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None), 
+            (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
+            (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
         ],
         1: [
-            (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
-            (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
+            (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
+            (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 297.6, 138 + y_offset, 'center', 20, 'bold', 220),
         ]
     }
 
@@ -321,8 +356,8 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
             break
             
         fields[page_idx] = [
-            (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
-            (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
+            (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
+            (f"{row_data.get('postleitzahl', '')} {row_data.get('ort', '')}", 297.6, 138 + y_offset, 'center', 20, 'bold', 220),
         ]
         y_top = 460
         for j, (url, label) in enumerate(group):
@@ -573,55 +608,46 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
 
         # Generate PDF with rotated images
         script_dir = os.path.dirname(__file__)
-        template_path = os.path.join(script_dir, "template_blanco.pdf")
         font_base_path = os.path.join(script_dir, "fonts")
         montserrat_regular_path = os.path.join(font_base_path, "Montserrat-Regular.ttf")
         montserrat_bold_path = os.path.join(font_base_path, "Montserrat-Bold.ttf")
         pdfmetrics.registerFont(TTFont('Montserrat', montserrat_regular_path))
         pdfmetrics.registerFont(TTFont('Montserrat-Bold', montserrat_bold_path))
-        template_reader = PdfReader(template_path)
-        writer = PdfWriter()
 
         # Conditional logic for template and year text
         darf_weiterbetrieben_werden = True
         display_year_text = '2044'
-        final_template_path = template_path # Fallback to original if logic fails
+        template_to_use = "template_blanco.pdf"
 
         try:
             baujahr_str = str(data.get('baujahr', '0')).strip()
             if baujahr_str.isdigit():
                 baujahr = int(baujahr_str)
-                if baujahr > 0:
+                if baujahr > 0: # Basic validation for baujahr
                     heizung_alter = datetime.now().year - baujahr
                     heizungstechnik = str(data.get('heizungstechnik', '')).strip().lower()
                     
-                    current_template_name = "template_blanco.pdf"
+                    # Conditions for "kein Weiterbetrieb"
                     if heizung_alter > 30 and heizungstechnik not in ['brennwerttechnik', 'niedertemperaturkessel']:
                         darf_weiterbetrieben_werden = False
-                        current_template_name = "template_blanco_kein_weiterbetrieb.pdf"
-                        display_year_text = ''
-                    final_template_path = os.path.join(script_dir, current_template_name)
+                        template_to_use = "template_blanco_kein_weiterbetrieb.pdf"
+                        display_year_text = '' # No year text if "kein Weiterbetrieb"
             else:
-                 print(f"⚠️ Baujahr '{baujahr_str}' is not a valid year string for recreate. Defaulting to original template.")
+                print(f"⚠️ Baujahr '{baujahr_str}' is not a valid year string for recreate. Defaulting to 'darf_weiterbetrieben_werden = True'.")
         except ValueError as ve:
-            print(f"⚠️ Error converting Baujahr to int for recreate: {ve}. Defaulting to original template.")
+            print(f"⚠️ Error converting Baujahr to int for recreate: {ve}. Defaulting to 'darf_weiterbetrieben_werden = True'.")
         except Exception as e_cond:
-            print(f"⚠️ Error in conditional logic for recreate template: {e_cond}. Defaulting to original template.")
+            print(f"⚠️ Error in conditional logic for recreate template: {e_cond}. Defaulting to 'darf_weiterbetrieben_werden = True'.")
 
+        final_template_path = os.path.join(script_dir, template_to_use)
         print(f"DEBUG: Recreate PDF using template: {final_template_path}")
         try:
             template_reader = PdfReader(final_template_path)
         except FileNotFoundError:
-            print(f"⚠️ PDF Template not found for recreate: {final_template_path}. Falling back to initially provided template_path: {template_path}")
-            # Fallback to the originally determined template path if the conditional one is not found
-            # This might happen if template_path was already the 'kein_weiterbetrieb' version, or if base 'template_blanco.pdf' is missing.
-            # For safety, try to read the original template_path if conditional one fails.
-            try:
-                 template_reader = PdfReader(template_path) # template_path is os.path.join(script_dir, "template_blanco.pdf") by default
-            except FileNotFoundError:
-                 print(f"CRITICAL ⚠️: Fallback template also not found: {template_path}")
-                 raise # Re-raise if the ultimate fallback template is also missing
-
+            print(f"⚠️ PDF Template not found for recreate: {final_template_path}")
+            raise
+        
+        writer = PdfWriter()
         name = f"{data.get('vorname', '')} {data.get('nachname', '')}"
         energy_date = parse_date(data.get('energieausweisDate')) if data.get('energieausweis') == 'Ja' else "Nicht vorhanden"
         efh = 'Ja' if data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
@@ -638,27 +664,30 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
             "Es wurde ein Foto bereitgestellt, welches auf Seite 3 abgebildet ist." if len(img_sources) == 1 else
             "Es wurden Fotos bereitgestellt, welche ab Seite 3 abgebildet sind."
         )
+        # Adjust Y coordinates for kein_weiterbetrieb template
+        y_offset = 20 if template_to_use == "template_blanco_kein_weiterbetrieb.pdf" else 0
+        
         fields = {
             0: [
-                (f"{data.get('strasse', '')} {data.get('hausnummer', '')},", 298, 494, 'center', 20, "bold", 210),
-                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 298, 474, 'center', 20, "bold", 210),
-                (data.get('heizungsart', ''), 300, 595, 'center', 20, 'bold', None),
-                (data.get('heizungshersteller', ''), 225, 422, 'left', 13, 'bold', 90),
-                (data.get('heizungstechnik', ''), 160, 392, 'left', 13, 'bold', 150),
-                (data.get('energietraeger', ''), 173, 362, 'left', 13, 'bold', None),
-                (energy_date, 184, 331, 'left', 13, 'bold', None),
-                (name, 229, 300, 'left', 13, 'bold', 250),
-                (data.get('baujahr', ''), 456, 422, 'left', 13, 'bold', None),
-                (efh, 356, 392, 'left', 13, 'bold', None),
-                (central, 419, 362, 'left', 13, 'bold', None),
-                (data.get('typenbezeichnung', ''), 443, 331, 'left', 13, 'bold', 100),
-                (display_year_text, 345, 254, 'left', 18, 'bold', None),
-                (photo_note, 43, 170, 'left', 11, 'normal', None),
-                (datetime.now().strftime("%d.%m.%Y"), 107, 126, 'center', 11, 'normal', None),
+                (f"{data.get('strasse', '')} {data.get('hausnummer', '')},", 298, 494 + y_offset, 'center', 20, "bold", 210),
+                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 298, 474 + y_offset, 'center', 20, "bold", 210),
+                (data.get('heizungsart', ''), 300, 595 + y_offset, 'center', 20, 'bold', None),
+                (data.get('heizungshersteller', ''), 225, 422 + y_offset, 'left', 13, 'bold', 90),
+                (data.get('heizungstechnik', ''), 160, 392 + y_offset, 'left', 13, 'bold', 150),
+                (data.get('energietraeger', ''), 173, 362 + y_offset, 'left', 13, 'bold', None),
+                (energy_date, 184, 331 + y_offset, 'left', 13, 'bold', None),
+                (name, 229, 300 + y_offset, 'left', 13, 'bold', 250),
+                (data.get('baujahr', ''), 456, 422 + y_offset, 'left', 13, 'bold', None),
+                (efh, 356, 392 + y_offset, 'left', 13, 'bold', None),
+                (central, 419, 362 + y_offset, 'left', 13, 'bold', None),
+                (data.get('typenbezeichnung', ''), 443, 331 + y_offset, 'left', 13, 'bold', 100),
+                (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None),
+                (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
+                (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
             ],
             1: [
-                (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
-                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
+                (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
+                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138 + y_offset, 'center', 20, 'bold', 220),
             ]
         }
 
@@ -667,8 +696,8 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
             if page_idx >= num_pages:
                 break
             fields[page_idx] = [
-                (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158, 'center', 20, 'bold', 220),
-                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138, 'center', 20, 'bold', 220),
+                (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
+                (f"{data.get('postleitzahl', '')} {data.get('ort', '')}", 297.6, 138 + y_offset, 'center', 20, 'bold', 220),
             ]
             y_top = 460
             for j, (url, label, rotation) in enumerate(group):
