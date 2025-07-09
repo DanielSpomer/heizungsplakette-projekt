@@ -110,14 +110,19 @@ def create_overlay(fields, width=A4[0], height=A4[1]):
                 print(f"Traceback:\n{traceback.format_exc()}")
             continue
 
-        # Handle special case for typenbezeichnung field (check if it's at position 443, with y either 331 or 351)
-        is_typenbezeichnung = len(field) >= 3 and field[1] == 443 and (field[2] == 331 or field[2] == 351)
+        # Handle special case for typenbezeichnung field (check if it's at position 443, with y either 331, 351, or 329)
+        is_typenbezeichnung = len(field) >= 3 and field[1] == 443 and (field[2] == 331 or field[2] == 351 or field[2] == 329)
         
         text, x, y, align, size, weight, max_width = field[:7]
+        
+        # Debug output for typenbezeichnung detection
+        if len(field) >= 3 and field[1] == 443:
+            print(f"DEBUG: Typenbezeichnung candidate detected - x={field[1]}, y={field[2]}, text='{text}', is_typenbezeichnung={is_typenbezeichnung}")
         font = "Montserrat-Bold" if weight == "bold" else "Montserrat"
         text = str(text if text is not None else "")
 
         if is_typenbezeichnung and max_width and c.stringWidth(text, font, size) > max_width:
+            print(f"DEBUG: Typenbezeichnung line wrapping triggered - text='{text}', max_width={max_width}, actual_width={c.stringWidth(text, font, size)}")
             # Handle line wrapping for typenbezeichnung
             words = text.split()
             lines = []
@@ -147,12 +152,14 @@ def create_overlay(fields, width=A4[0], height=A4[1]):
                 
                 # Draw each line
                 c.setFont(font, size)
+                print(f"DEBUG: Drawing {len(lines)} lines for typenbezeichnung with font size {size}")
                 for i, line in enumerate(lines):
                     line_y = y - (i * 15)  # 15 pixels line spacing
                     if align == "center":
                         line_x = x - c.stringWidth(line, font, size) / 2
                     else:
                         line_x = x
+                    print(f"DEBUG: Drawing line {i+1}: '{line}' at position ({line_x}, {line_y})")
                     c.drawString(line_x, line_y, line)
         else:
             # Regular text handling
