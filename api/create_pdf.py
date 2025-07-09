@@ -352,10 +352,6 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
             (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None), 
             (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
             (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
-            # Signature fields
-            (datetime.now().strftime("%d.%m.%Y"), 430, 126 + y_offset, 'center', 11, 'normal', None),  # Date signature
-            ("Unterschrift Eigentümer", 107, 80 + y_offset, 'center', 10, 'normal', None),  # Owner signature label
-            ("Unterschrift Bezirksschornsteinfegermeister", 430, 80 + y_offset, 'center', 10, 'normal', None),  # Official signature label
         ],
         1: [
             (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
@@ -698,10 +694,6 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                 (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None),
                 (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
                 (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
-                # Signature fields
-                (datetime.now().strftime("%d.%m.%Y"), 430, 126 + y_offset, 'center', 11, 'normal', None),  # Date signature
-                ("Unterschrift Eigentümer", 107, 80 + y_offset, 'center', 10, 'normal', None),  # Owner signature label
-                ("Unterschrift Bezirksschornsteinfegermeister", 430, 80 + y_offset, 'center', 10, 'normal', None),  # Official signature label
             ],
             1: [
                 (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
