@@ -135,15 +135,25 @@ def create_overlay(fields, width=A4[0], height=A4[1]):
             if current_line:
                 lines.append(current_line)
             
-            # Draw each line
-            c.setFont(font, size)
-            for i, line in enumerate(lines[:2]):  # Limit to 2 lines
-                line_y = y - (i * 15)  # 15 pixels line spacing
-                if align == "center":
-                    line_x = x - c.stringWidth(line, font, size) / 2
-                else:
-                    line_x = x
-                c.drawString(line_x, line_y, line)
+            # Limit to 2 lines and find the longest line
+            lines = lines[:2]
+            if lines:
+                max_line_width = max(c.stringWidth(line, font, size) for line in lines)
+                
+                # Scale down font size if any line is too wide
+                while size > 4 and max_line_width > max_width:
+                    size -= 0.5
+                    max_line_width = max(c.stringWidth(line, font, size) for line in lines)
+                
+                # Draw each line
+                c.setFont(font, size)
+                for i, line in enumerate(lines):
+                    line_y = y - (i * 15)  # 15 pixels line spacing
+                    if align == "center":
+                        line_x = x - c.stringWidth(line, font, size) / 2
+                    else:
+                        line_x = x
+                    c.drawString(line_x, line_y, line)
         else:
             # Regular text handling
             while size > 4 and max_width and c.stringWidth(text, font, size) > max_width:
@@ -342,6 +352,10 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
             (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None), 
             (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
             (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
+            # Signature fields
+            (datetime.now().strftime("%d.%m.%Y"), 430, 126 + y_offset, 'center', 11, 'normal', None),  # Date signature
+            ("Unterschrift Eigentümer", 107, 80 + y_offset, 'center', 10, 'normal', None),  # Owner signature label
+            ("Unterschrift Bezirksschornsteinfegermeister", 430, 80 + y_offset, 'center', 10, 'normal', None),  # Official signature label
         ],
         1: [
             (f"{row_data.get('strasse', '')} {row_data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
@@ -684,6 +698,10 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                 (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None),
                 (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
                 (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
+                # Signature fields
+                (datetime.now().strftime("%d.%m.%Y"), 430, 126 + y_offset, 'center', 11, 'normal', None),  # Date signature
+                ("Unterschrift Eigentümer", 107, 80 + y_offset, 'center', 10, 'normal', None),  # Owner signature label
+                ("Unterschrift Bezirksschornsteinfegermeister", 430, 80 + y_offset, 'center', 10, 'normal', None),  # Official signature label
             ],
             1: [
                 (f"{data.get('strasse', '')} {data.get('hausnummer', '')}", 297.6, 158 + y_offset, 'center', 20, 'bold', 220),
