@@ -304,6 +304,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
     energy_date = parse_date(row_data.get('energieausweisDate')) if row_data.get('energieausweis') == 'Ja' else "Nicht vorhanden"
     efh = 'Ja' if row_data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
     central = 'Ja' if row_data.get('heizsystem') == 'Zentralheizung' else 'Nein'
+    typenbezeichnung = row_data.get('typenbezeichnung', '').strip() or 'Unbekannt'
 
     # Collect all image URLs
     img_sources = []
@@ -355,7 +356,7 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
             (row_data.get('baujahr', ''), 456, 422 + y_offset, 'left', 13, 'bold', None),
             (efh, 356, 392 + y_offset, 'left', 13, 'bold', None),
             (central, 419, 362 + y_offset, 'left', 13, 'bold', None),
-            (row_data.get('typenbezeichnung', ''), 443, 331 + y_offset, 'left', 13, 'bold', 100),
+            (typenbezeichnung, 443, 331 + y_offset, 'left', 13, 'bold', 100),
             (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None), 
             (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
             (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
@@ -704,6 +705,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
         energy_date = parse_date(data.get('energieausweisDate')) if data.get('energieausweis') == 'Ja' else "Nicht vorhanden"
         efh = 'Ja' if data.get('artDerImmobilie') == 'Einfamilienhaus' else 'Nein'
         central = 'Ja' if data.get('heizsystem') == 'Zentralheizung' else 'Nein'
+        typenbezeichnung = data.get('typenbezeichnung', '').strip() or 'Unbekannt'
 
         total_images = len(img_sources)
         if total_images == 0:
@@ -732,7 +734,7 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                 (data.get('baujahr', ''), 456, 422 + y_offset, 'left', 13, 'bold', None),
                 (efh, 356, 392 + y_offset, 'left', 13, 'bold', None),
                 (central, 419, 362 + y_offset, 'left', 13, 'bold', None),
-                (data.get('typenbezeichnung', ''), 443, 331 + y_offset, 'left', 13, 'bold', 100),
+                (typenbezeichnung, 443, 331 + y_offset, 'left', 13, 'bold', 100),
                 (display_year_text, 345, 254 + y_offset, 'left', 18, 'bold', None),
                 (photo_note, 43, 170 + y_offset, 'left', 11, 'normal', None),
                 (datetime.now().strftime("%d.%m.%Y"), 107, 126 + y_offset, 'center', 11, 'normal', None),
