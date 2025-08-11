@@ -385,6 +385,11 @@ def generate_pdf_in_memory(row_data, template_path="template_blanco.pdf"):
                 if response.status_code == 200:
                     print(f"DEBUG: Successfully downloaded image from {url}")
                     img_data = BytesIO(response.content)
+                    
+                    # Compress image to reduce file size
+                    print(f"DEBUG: Compressing image from {url}")
+                    img_data = compress_image(img_data, max_width=600, max_height=450, quality=70)
+                    
                     img = Image.open(img_data)
                     width, height = img.size
                     ratio = 180 / height  # Scale to 180px height
@@ -578,6 +583,36 @@ if __name__ == "__main__":
         print(f"ERROR: An unexpected error occurred - {str(e)}")
         sys.exit(1)
 
+# Add image compression function
+def compress_image(image_data, max_width=800, max_height=600, quality=75):
+    """
+    Compress and resize an image to reduce file size.
+    
+    Args:
+        image_data: BytesIO object containing image data
+        max_width: Maximum width in pixels
+        max_height: Maximum height in pixels  
+        quality: JPEG quality (1-100)
+    """
+    try:
+        img = Image.open(image_data)
+        
+        # Convert to RGB if necessary (for PNG with transparency)
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            img = img.convert('RGB')
+        
+        # Resize if image is too large
+        img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+        
+        # Save as compressed JPEG
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        output.seek(0)
+        return output
+    except Exception as e:
+        print(f"⚠️ Error compressing image: {e}")
+        return image_data
+
 # Add after the scale_image function
 def rotate_image(image_data, rotation_degrees):
     """Rotate an image by specified degrees (clockwise)."""
@@ -588,7 +623,7 @@ def rotate_image(image_data, rotation_degrees):
             img = img.convert('RGB')
         rotated_img = img.rotate(-rotation_degrees, expand=True)  # Negative for clockwise
         output = BytesIO()
-        rotated_img.save(output, format='JPEG', quality=95)
+        rotated_img.save(output, format='JPEG', quality=75)
         output.seek(0)
         return output
     except Exception as e:
@@ -723,6 +758,11 @@ def recreate_pdf_with_rotated_images(item_id, image_rotations=None):
                     response = requests.get(url)
                     if response.status_code == 200:
                         img_data = BytesIO(response.content)
+                        
+                        # Compress image to reduce file size
+                        print(f"DEBUG: Compressing image from {url}")
+                        img_data = compress_image(img_data, max_width=600, max_height=450, quality=70)
+                        
                         if rotation != 0:
                             print(f"DEBUG: Rotating image {url} by {rotation}°")
                             img_data = rotate_image(img_data, rotation)
