@@ -949,7 +949,7 @@ export default function HeizungsplaketteHomepage() {
                       </GlassmorphismCard>
                       <p className="text-base sm:text-lg font-medium text-blue-900">
                         Die Diskussion um den Austausch bestehender Heizungen wird es demnach weiterhin geben. Damit
-                        wird auch die Heizungsplakette als „Ausweis" wie lange eine bestehende Heizung noch
+                        wird auch die Heizungsplakette als &quot;Ausweis&quot; wie lange eine bestehende Heizung noch
                         weiterbetrieben werden darf, wichtig wie nie.
                       </p>
                     </div>
@@ -1037,7 +1037,7 @@ export default function HeizungsplaketteHomepage() {
                 id="process-heading"
                 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 lg:mb-6 text-gray-900"
               >
-                So einfach geht's
+                So einfach geht&apos;s
               </h2>
               <p
                 className={`text-base sm:text-lg lg:text-xl ${getTextClasses("text-gray-600")} max-w-2xl mx-auto px-4 sm:px-0`}
@@ -1224,7 +1224,7 @@ export default function HeizungsplaketteHomepage() {
                       className={`${getTextClasses("text-gray-600")} max-w-3xl mx-auto mb-6 sm:mb-8 text-center text-sm sm:text-base`}
                     >
                       Bei der Bestellung der Heizungsplakette gibt es die Möglichkeit, verschiedene Fotos
-                      bereitzustellen und in das Dokument „Heizungsplakette" zu integrieren. Auch dies dient der
+                      bereitzustellen und in das Dokument &quot;Heizungsplakette&quot; zu integrieren. Auch dies dient der
                       Vollständigkeit der Verkaufsunterlagen für eine Immobilie.
                     </p>
 
